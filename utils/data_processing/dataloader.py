@@ -21,7 +21,6 @@ def provider(fold, total_folds, df_path, data_folder, phase, size, batch_size=8,
     df = train_df if phase == "train" else val_df
 
     # NOTE: total_folds=5 -> train/val : 80%/20%
-    print(segmentation)
     image_dataset = SeaIceDataset(df=df, data_folder=data_folder, phase=phase, size=size,
                                   segmentation=segmentation)
     if phase == 'train':

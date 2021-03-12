@@ -70,10 +70,10 @@ class SeaIceDataset(Dataset):
                     img = self.transforms(image=img)['image']
                     label = self.bin_labels[idx]
                 except RuntimeError:
-                    img_path = self.img_names[idx - 5]
+                    img_path = self.img_names[idx - 20]
                     img = np.array(Image.open(img_path))
                     img = self.transforms(image=img)['image']
-                    label = self.bin_labels[idx - 5]
+                    label = self.bin_labels[idx - 20]
         if self.segmentation:
             return img, label, mask
 
