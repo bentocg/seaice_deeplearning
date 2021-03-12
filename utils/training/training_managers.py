@@ -142,7 +142,7 @@ class TrainerClassification(object):
 
     def forward(self, images, targets):
         images = images.to(self.device)
-        targets = targets.flatten.to(self.device)
+        targets = targets.flatten().to(self.device)
         outputs = self.net(images).flatten()
         loss = self.criterion(outputs, targets)
         return loss, outputs
