@@ -51,13 +51,15 @@ def main():
                      f"{'finetuned' if args.finetune else 'scratch'}"
         model_trainer = TrainerSegmentation(model, device=f'cuda:{args.device_id}', patch_size=args.patch_size,
                                             batch_size=(args.batch_size, args.batch_size * 2), epochs=args.epochs,
-                                            lr=args.lr, data_folder=args.training_set, model_name=model_name)
+                                            lr=args.learning_rate, data_folder=args.training_set,
+                                            model_name=model_name)
     else:
         model = resnet34(pretrained=True)
         model_name = f"Resnet34_{args.patch_size}_{args.learning_rate}_{args.batch_size}"
         model_trainer = TrainerClassification(model, device=f'cuda:{args.device_id}', patch_size=args.patch_size,
                                               batch_size=(args.batch_size, args.batch_size * 2), epochs=args.epochs,
-                                              lr=args.lr, data_folder=args.training_set, model_name=model_name)
+                                              lr=args.learning_rate, data_folder=args.training_set,
+                                              model_name=model_name)
 
     # start training
     model_trainer.start()
