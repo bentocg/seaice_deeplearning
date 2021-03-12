@@ -67,9 +67,12 @@ class SeaIceDataset(Dataset):
                     mask = augmented['mask'].reshape([1, self.size, self.size])
             else:
                 try:
+                    print(self.img_names[idx])
                     img = self.transforms(image=img)['image']
                     label = self.bin_labels[idx]
                 except:
+                    print('failed')
+                    print(self.img_names[idx])
                     img_path = self.img_names[idx - 5]
                     img = np.array(Image.open(img_path))
                     img = self.transforms(image=img)['image']
