@@ -46,7 +46,6 @@ class TrainerSegmentation(object):
             for phase in self.phases
         }
         self.losses = {phase: [] for phase in self.phases}
-        self.iou_scores = {phase: [] for phase in self.phases}
         self.dice_scores = {phase: [] for phase in self.phases}
 
     def forward(self, images, targets):
@@ -76,10 +75,9 @@ class TrainerSegmentation(object):
             running_loss += loss.item()
             meter.update(targets, outputs)
         epoch_loss = running_loss / (total_batches * batch_size)
-        dice, iou = epoch_log(phase, epoch, epoch_loss, meter, start)
+        dice = epoch_log(phase, epoch, epoch_loss, meter, start)
         self.losses[phase].append(epoch_loss)
         self.dice_scores[phase].append(dice)
-        self.iou_scores[phase].append(iou)
         torch.cuda.empty_cache()
         return epoch_loss
 
