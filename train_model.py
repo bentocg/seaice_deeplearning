@@ -13,9 +13,9 @@ def parse_args():
     parser.add_argument('--learning_rate', '-l', type=float, default=0.001, help='learning rate for training')
     parser.add_argument('--patch_size', '-p', type=int, default=256, help='patch size for images')
     parser.add_argument('--epochs', '-e', type=int, default=25, help='number of epochs for training')
-    parser.add_argument('--segmentation', '-s', type=bool, default=False, help='switch for segmentation'
+    parser.add_argument('--segmentation', '-s', type=int, default=0, help='switch for segmentation'
                                                                                ' / classification models')
-    parser.add_argument('--finetune', '-f', type=bool, default=False, help='switch for segmentation models '
+    parser.add_argument('--finetune', '-f', type=int, default=0, help='switch for segmentation models '
                                                                            'to finetune encoder from classification or'
                                                                            'train from scratch')
     parser.add_argument('--random_seed', '-r', type=int, default=42, help='random seed for reproducibility')
