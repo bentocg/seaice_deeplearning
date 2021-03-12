@@ -20,7 +20,7 @@ class TrainerSegmentation(object):
         self.batch_size = {'train': batch_size[0], 'val': batch_size[1]}
         self.lr = lr
         self.num_epochs = epochs
-        self.best_dice = float("inf")
+        self.best_dice = 0.0
         self.phases = ["train", "val"]
         self.device = device
         self.model_name = model_name
