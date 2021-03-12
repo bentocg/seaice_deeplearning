@@ -156,7 +156,7 @@ class TrainerClassification(object):
         total_batches = len(dataloader)
         self.optimizer.zero_grad()
         for itr, batch in enumerate(dataloader):
-            images, targets, _ = batch
+            images, targets = batch
             loss, outputs = self.forward(images, targets)
             if phase == "train":
                 loss.backward()

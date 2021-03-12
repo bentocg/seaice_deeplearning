@@ -42,8 +42,6 @@ class SeaIceDataset(Dataset):
                 mask = np.array(Image.open(mask_path))
             else:
                 mask = np.zeros([self.size, self.size, 1])
-        else:
-            mask = np.zeros([self.size, self.size, 1])
 
         if self.transforms is not None:
             if self.segmentation:
@@ -76,6 +74,8 @@ class SeaIceDataset(Dataset):
                     img = np.array(Image.open(img_path))
                     img = self.transforms(image=img)['image']
                     label = self.bin_labels[idx - 5]
-                mask = np.zeros([1, self.size, self.size])
+        if self.segmentation:
+            return img, label, mask
 
-        return img, label, mask
+        else:
+            return img, label
