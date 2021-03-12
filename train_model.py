@@ -31,6 +31,7 @@ def main():
     seed_all(args.random_seed)
 
     # define model
+    print(args.segmentation)
     if args.segmentation:
         model = smp.Unet("resnet34", encoder_weights="imagenet", activation=None)
 
