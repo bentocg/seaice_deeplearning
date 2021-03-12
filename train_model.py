@@ -13,7 +13,7 @@ def parse_args():
     parser.add_argument('--patch_size', '-p', type=int, default=256, help='patch size for images')
     parser.add_argument('--segmentation', '-s', type=bool, default=False, help='switch for segmentation'
                                                                                ' / classification models')
-    parser.add_argument('--finetune', 'f', type=bool, default=False, help='switch for segmentation models '
+    parser.add_argument('--finetune', '-f', type=bool, default=False, help='switch for segmentation models '
                                                                           'to finetune encoder from classification or '
                                                                           'train from scratch')
     parser.add_argument('--random_seed', '-r', type=int, default=42, help='random seed for reproducibility')
