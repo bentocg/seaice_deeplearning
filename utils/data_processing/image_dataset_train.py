@@ -17,7 +17,7 @@ class SeaIceDataset(Dataset):
 
         # get labels and img names
         self.long_labels = self.ds.label.values
-        self.bin_labels = self.ds['pack-ice'].values
+        self.bin_labels = self.ds['pack_ice'].values
         self.img_names = [f'{self.root}/x/{file}' for file in self.ds.img_name.values]
 
         if self.segmentation:
