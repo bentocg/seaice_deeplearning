@@ -98,7 +98,7 @@ class TrainerSegmentation(object):
             if val_loss < self.best_loss:
                 print("******** New optimal found, saving state ********")
                 state["best_loss"] = self.best_loss = val_loss
-                torch.save(state, f"checkpoints/{self.model_name}.pth")
+                torch.save(state, f"checkpoints/{self.model_name}_loss-{self.best_loss}.pth")
             print()
 
 
@@ -183,5 +183,5 @@ class TrainerClassification(object):
             if val_loss < self.best_loss:
                 print("******** New optimal found, saving state ********")
                 state["best_loss"] = self.best_loss = val_loss
-                torch.save(state, f"checkpoints/{self.model_name}.pth")
+                torch.save(state, f"checkpoints/{self.model_name}_loss-{self.best_loss}.pth")
             print()

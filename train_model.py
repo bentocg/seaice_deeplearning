@@ -3,6 +3,7 @@ from argparse import ArgumentParser
 from torchvision.models.resnet import resnet34
 import segmentation_models_pytorch as smp
 from utils.training.training_managers import TrainerClassification, TrainerSegmentation
+from utils.training.utility import seed_all
 
 
 def parse_args():
@@ -24,6 +25,9 @@ def parse_args():
 def main():
     # load arguments
     args = parse_args()
+
+    # set seed
+    seed_all(args.random_seed)
 
     # define model
     if args.segmentation:

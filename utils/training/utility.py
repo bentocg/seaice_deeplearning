@@ -1,18 +1,10 @@
-__all__ = ['predict', 'metric', 'Meter', 'epoch_log', 'compute_ious', 'compute_iou_batch']
+__all__ = ['predict', 'metric', 'Meter', 'epoch_log', 'compute_ious', 'compute_iou_batch',
+           'seed_all']
 
 import numpy as np
 import torch
 import os
 import random
-
-
-def seed_everything(seed):
-    random.seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
 
 
 def predict(X, threshold):
@@ -115,3 +107,20 @@ def compute_iou_batch(outputs, labels, classes=None):
         ious.append(np.nanmean(compute_ious(pred, label, classes)))
     iou = np.nanmean(ious)
     return iou
+
+
+def seed_all(seed: int):
+    if not seed:
+        seed = 10
+
+    print("[ Using Seed : ", seed, " ]")
+
+    os.environ['PYTHONHASHSEED'] = str(seed)  # set PYTHONHASHSEED env var at fixed value
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.cuda.manual_seed(seed) # pytorch (both CPU and CUDA)
+    np.random.seed(seed) # for numpy pseudo-random generator
+    random.seed(seed) # set fixed value for python built-in pseudo-random generator
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.enabled = False
