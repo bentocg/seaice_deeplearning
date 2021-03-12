@@ -54,7 +54,7 @@ def main():
                                             lr=args.learning_rate, data_folder=args.training_set,
                                             model_name=model_name)
     else:
-        model = resnet34(pretrained=True)
+        model = resnet34(num_classes=1)
         model_name = f"Resnet34_{args.patch_size}_{args.learning_rate}_{args.batch_size}"
         model_trainer = TrainerClassification(model, device=f'cuda:{args.device_id}', patch_size=args.patch_size,
                                               batch_size=(args.batch_size, args.batch_size * 2), epochs=args.epochs,
