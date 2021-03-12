@@ -34,10 +34,10 @@ class SeaIceDataset(Dataset):
 
         # read img and apply transforms
         img_path = self.img_names[idx]
-        mask_path = self.mask_names[idx]
         label = self.bin_labels[idx]
         img = np.array(Image.open(img_path))
         if self.segmentation:
+            mask_path = self.mask_names[idx]
             if mask_path:
                 mask = np.array(Image.open(mask_path))
             else:
