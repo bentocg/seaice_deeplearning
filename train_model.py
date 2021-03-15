@@ -43,7 +43,10 @@ def main():
             # 1. filter out unnecessary keys
             pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
             # 2. overwrite entries in the existing state dict
+            print(pretrained_dict)
+            print(model_dict)
             model_dict.update(pretrained_dict)
+            print(model_dict)
             # 3. load the new state dict
             model.load_state_dict(model_dict)
 
