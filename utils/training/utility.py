@@ -68,7 +68,7 @@ class Meter:
         return dices
 
 
-def epoch_log(phase, epoch, epoch_loss, meter, start):
+def epoch_log(epoch_loss, meter):
     """logging the metrics at the end of an epoch"""
     dices = meter.get_metrics()
     dice, dice_neg, dice_pos = dices

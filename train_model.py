@@ -36,17 +36,16 @@ def main():
 
         if args.finetune:
             # update with pretrained weights from classification
-            pretrained_dict = torch.load(f'checkpoints/Resnet34_{args.patch_size}_best.pth', map_location=torch.device('cpu'))
-            pretrained_dict = {k.replace('module', 'encoder'): v for k, v in pretrained_dict.items()}
+            pretrained_dict = torch.load(f'checkpoints/Resnet34_{args.patch_size}_best.pth',
+                                         map_location=torch.device('cpu'))['state_dict']
+            pretrained_dict = {f'encoder.{k}': v for k, v in pretrained_dict.items()}
             model_dict = model.state_dict()
 
             # 1. filter out unnecessary keys
             pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
             # 2. overwrite entries in the existing state dict
-            print(pretrained_dict)
-            print(model_dict)
             model_dict.update(pretrained_dict)
-            print(model_dict)
+
             # 3. load the new state dict
             model.load_state_dict(model_dict)
 

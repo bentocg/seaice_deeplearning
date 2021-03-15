@@ -177,9 +177,11 @@ class TrainerClassification(object):
             }
             with torch.no_grad():
                 val_loss = self.iterate(epoch, "val")
-            self.scheduler.step(val_loss)
+                print("Loss: %0.4f", val_loss)
+                self.scheduler.step(val_loss)
             if val_loss < self.best_loss:
                 print("******** New optimal found, saving state ********")
                 state["best_loss"] = self.best_loss = val_loss
                 torch.save(state, f"checkpoints/{self.model_name}_loss-{self.best_loss}_epoch-{epoch}.pth")
             print()
+            quit()
