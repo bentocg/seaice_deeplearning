@@ -75,7 +75,7 @@ class TrainerSegmentation(object):
             running_loss += loss.item()
             meter.update(targets, outputs)
         epoch_loss = running_loss / (total_batches * batch_size)
-        dice = epoch_log(phase, epoch, epoch_loss, meter, start)
+        dice = epoch_log(phase, epoch)
         self.losses[phase].append(epoch_loss)
         self.dice_scores[phase].append(dice)
         torch.cuda.empty_cache()
