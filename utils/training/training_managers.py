@@ -184,4 +184,4 @@ class TrainerClassification(object):
                 state["best_loss"] = self.best_loss = val_loss
                 torch.save(state, f"checkpoints/{self.model_name}_loss-{self.best_loss}_epoch-{epoch}.pth")
             print()
-            quit()
+        quit()
