@@ -20,6 +20,7 @@ class TrainerSegmentation(object):
         self.batch_size = {'train': batch_size[0], 'val': batch_size[1]}
         self.lr = lr
         self.num_epochs = epochs
+        self.best_iou = 0.0
         self.best_dice = 0.0
         self.phases = ["train", "val"]
         self.device = device
@@ -47,6 +48,7 @@ class TrainerSegmentation(object):
         }
         self.losses = {phase: [] for phase in self.phases}
         self.dice_scores = {phase: [] for phase in self.phases}
+        self.iou_scores = {phase: [] for phase in self.phases}
 
     def forward(self, images, targets):
         images = images.to(self.device)
@@ -75,11 +77,12 @@ class TrainerSegmentation(object):
             running_loss += loss.item()
             meter.update(targets, outputs)
         epoch_loss = running_loss / (total_batches * batch_size)
-        dice = epoch_log(epoch_loss, meter)
+        dice, iou = epoch_log(epoch_loss, meter)
         self.losses[phase].append(epoch_loss)
         self.dice_scores[phase].append(dice)
+        self.iou_scores[phase].append(iou)
         torch.cuda.empty_cache()
-        return dice
+        return dice, iou
 
     def start(self):
         for epoch in range(self.num_epochs):
@@ -87,16 +90,18 @@ class TrainerSegmentation(object):
             state = {
                 "epoch": epoch,
                 "best_dice": self.best_dice,
+                "best_iou": self.best_iou,
                 "state_dict": self.net.state_dict(),
                 "optimizer": self.optimizer.state_dict(),
             }
             with torch.no_grad():
-                val_dice = self.iterate(epoch, "val")
+                val_dice, val_iou = self.iterate(epoch, "val")
             self.scheduler.step(val_dice)
             if val_dice > self.best_dice:
                 print("******** New optimal found, saving state ********")
                 state["best_dice"] = self.best_dice = val_dice
-                torch.save(state, f"checkpoints/{self.model_name}_dice-{self.best_dice}_epoch-{epoch}.pth")
+                state["best_iou"] = self.best_iou = val_iou
+                torch.save(state, f"checkpoints/{self.model_name}_dice-{self.best_dice}_iou-{self.best_iou}_epoch-{epoch}.pth")
             print()
 
 
