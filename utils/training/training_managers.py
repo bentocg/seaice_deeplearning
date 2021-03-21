@@ -58,7 +58,7 @@ class TrainerSegmentation(object):
         return loss, outputs
 
     def iterate(self, epoch, phase):
-        meter = Meter(phase, epoch)
+        meter = Meter()
         start = time.strftime("%H:%M:%S")
         print(f"Starting epoch: {epoch} | phase: {phase} | ⏰: {start}")
         batch_size = self.batch_size[phase]
