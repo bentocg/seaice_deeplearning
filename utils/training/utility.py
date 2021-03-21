@@ -14,6 +14,8 @@ def predict(X, threshold):
 
 def compute_ious(pred, label, classes, ignore_index=255, only_present=True):
     '''computes iou for one ground truth mask and predicted mask'''
+    print(pred)
+    print(label)
     pred[label == ignore_index] = 0
     ious = []
     for c in classes:
