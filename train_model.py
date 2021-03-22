@@ -2,7 +2,7 @@ import torch
 from argparse import ArgumentParser
 from torchvision.models.resnet import resnet34
 import segmentation_models_pytorch as smp
-from utils.training.training_managers import TrainerClassification, TrainerSegmentation
+from utils.training.training_manager import Trainer
 from utils.training.utility import seed_all
 
 
@@ -26,6 +26,7 @@ def parse_args():
 def main():
     # load arguments
     args = parse_args()
+    device = f'cuda:{args.device_id}' if torch.cuda.is_available() else 'cpu'
 
     # set seed
     seed_all(args.random_seed)
@@ -51,17 +52,17 @@ def main():
 
         model_name = f"UnetResnet34_{args.patch_size}_{args.learning_rate}_{args.batch_size}_" \
                      f"{'finetuned' if args.finetune else 'scratch'}"
-        model_trainer = TrainerSegmentation(model, device=f'cuda:{args.device_id}', patch_size=args.patch_size,
-                                            batch_size=(args.batch_size, args.batch_size * 2), epochs=args.epochs,
-                                            lr=args.learning_rate, data_folder=args.training_set,
-                                            model_name=model_name)
+        model_trainer = Trainer(model, device=device, patch_size=args.patch_size,
+                                batch_size=(args.batch_size, args.batch_size * 2), epochs=args.epochs,
+                                lr=args.learning_rate, data_folder=args.training_set,
+                                model_name=model_name, segmentation=True)
     else:
         model = resnet34(num_classes=1)
         model_name = f"Resnet34_{args.patch_size}_{args.learning_rate}_{args.batch_size}"
-        model_trainer = TrainerClassification(model, device=f'cuda:{args.device_id}', patch_size=args.patch_size,
-                                              batch_size=(args.batch_size, args.batch_size * 2), epochs=args.epochs,
-                                              lr=args.learning_rate, data_folder=args.training_set,
-                                              model_name=model_name)
+        model_trainer = Trainer(model, device=device, patch_size=args.patch_size,
+                                batch_size=(args.batch_size, args.batch_size * 2), epochs=args.epochs,
+                                lr=args.learning_rate, data_folder=args.training_set,
+                                model_name=model_name, segmentation=False)
 
     # start training
     model_trainer.start()

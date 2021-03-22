@@ -20,6 +20,8 @@ class FocalLoss(nn.Module):
         self.gamma = gamma
 
     def forward(self, pred, target):
+        if len(target.shape) == 1:
+            pred = pred.view(-1)
         if not (target.size() == pred.size()):
             raise ValueError("Target size ({}) must be the same as input size ({})"
                              .format(target.size(), pred.size()))

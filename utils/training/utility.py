@@ -12,11 +12,11 @@ def predict(X, threshold):
     return preds
 
 
-def compute_ious(pred, label, classes, ignore_index=255, only_present=True):
+def compute_ious(pred, label, classes, ignore_index=255, only_present=True, segmentation=False):
     '''computes iou for one ground truth mask and predicted mask'''
-    print(pred)
-    print(label)
-    pred[label == ignore_index] = 0
+    if segmentation:
+        label /= 255
+        pred[label == ignore_index] = 0
     ious = []
     for c in classes:
         label_c = label == c
@@ -75,6 +75,7 @@ def metric(probability, truth, threshold=0.5):
 class Meter:
     """A meter to keep track of iou and dice scores throughout an epoch"""
     def __init__(self):
+        self.segmentation = True
         self.base_threshold = 0.5
         self.base_dice_scores = []
         self.dice_neg_scores = []

@@ -8,11 +8,10 @@ from .balanced_batch_sampler import BalancedBatchSampler
 def provider(fold, total_folds, df_path, data_folder, phase, size, batch_size=8, num_workers=4,
              segmentation=False):
     df = pd.read_csv(df_path)
-    df_ice = df[df["pack_ice"] == 1]
-    df_not = df[df["pack_ice"] == 0]
 
-    df = pd.concat([df_ice, df_not.sample(len(df_ice), random_state=4)])
-
+    # df_ice = df[df["pack_ice"] == 1]
+    # df_not = df[df["pack_ice"] == 0]
+    # df = pd.concat([df_ice, df_not.sample(len(df_ice), random_state=4)])
     # NOTE: equal number of positive and negative cases are chosen.
 
     kfold = StratifiedKFold(total_folds, shuffle=True, random_state=4)
