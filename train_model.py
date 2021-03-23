@@ -31,6 +31,7 @@ def main():
     args = parse_args()
     device = f'cuda:{args.device_id}' if torch.cuda.is_available() else 'cpu'
     epochs = args.epochs
+    start_epoch = 0
 
     # set seed
     seed_all(args.random_seed)
@@ -68,16 +69,19 @@ def main():
                                                                  x).group(0)[6:]))[-1]
         state_dict = torch.load(f'checkpoints/{checkpoint}',
                                 map_location=torch.device(device))['state_dict']
+        print(f'Resuming from {state_dict}')
 
         # skip past epochs
-        epochs -= int(re.search(r'epoch-[0-9]+', checkpoint).group(0)[6:])
+        start_epoch = int(re.search(r'epoch-[0-9]+', checkpoint).group(0)[6:])
+        epochs -= start_epoch
         model.load_state_dict(state_dict)
 
     # start training
     model_trainer = Trainer(model, device=device, patch_size=args.patch_size,
                             batch_size=(args.batch_size, args.batch_size * 2), epochs=epochs,
                             lr=args.learning_rate, data_folder=args.training_set,
-                            model_name=model_name, segmentation=args.segmentation)
+                            model_name=model_name, segmentation=args.segmentation,
+                            start_epoch=start_epoch)
     model_trainer.start()
 
 

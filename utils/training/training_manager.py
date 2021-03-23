@@ -13,13 +13,15 @@ class Trainer(object):
     """This class takes care of training and validation of our segmentation models"""
 
     def __init__(self, model, model_name, device="cuda:0", batch_size=(64, 128), patch_size=256, epochs=20,
-                 lr=1e-3, patience=3, data_folder='training_set_synthetic', segmentation=True):
+                 lr=1e-3, patience=3, data_folder='training_set_synthetic', segmentation=True,
+                 start_epoch=0):
         self.fold = 1
         self.total_folds = 5
         self.num_workers = 0
         self.batch_size = {'train': batch_size[0], 'val': batch_size[1]}
         self.lr = lr
         self.num_epochs = epochs
+        self.start_epoch = start_epoch
         self.best_iou = 0.0
         self.best_dice = 0.0
         self.phases = ["train", "val"]
@@ -90,7 +92,7 @@ class Trainer(object):
         return dice, iou
 
     def start(self):
-        for epoch in range(self.num_epochs):
+        for epoch in range(self.start_epoch, self.start_epoch + self.num_epochs):
             self.iterate(epoch, "train")
             state = {
                 "epoch": epoch,
