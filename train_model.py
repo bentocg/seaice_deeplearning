@@ -69,7 +69,7 @@ def main():
                                                                  x).group(0)[6:]))[-1]
         state_dict = torch.load(f'checkpoints/{checkpoint}',
                                 map_location=torch.device(device))['state_dict']
-        print(f'Resuming from {state_dict}')
+        print(f'Resuming from {checkpoint}')
 
         # skip past epochs
         start_epoch = int(re.search(r'epoch-[0-9]+', checkpoint).group(0)[6:])
