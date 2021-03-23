@@ -72,7 +72,7 @@ def main():
         print(f'Resuming from {checkpoint}')
 
         # skip past epochs
-        start_epoch = int(re.search(r'epoch-[0-9]+', checkpoint).group(0)[6:])
+        start_epoch = int(re.search(r'epoch-[0-9]+', checkpoint).group(0)[6:]) + 1
         epochs -= start_epoch
         model.load_state_dict(state_dict)
 
