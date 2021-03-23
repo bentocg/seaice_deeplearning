@@ -2,8 +2,10 @@ __all__ = ['predict', 'metric', 'Meter', 'epoch_log', 'seed_all']
 
 import numpy as np
 import torch
+import cv2
 import os
 import random
+import time
 
 
 def predict(X, threshold):
@@ -12,11 +14,11 @@ def predict(X, threshold):
     return preds
 
 
-def compute_ious(pred, label, classes, ignore_index=255, only_present=True, segmentation=False):
+def compute_ious(pred, label, classes, only_present=True):
     '''computes iou for one ground truth mask and predicted mask'''
-    if segmentation:
+    if np.max(label) == 255:
         label /= 255
-        pred[label == ignore_index] = 0
+
     ious = []
     for c in classes:
         label_c = label == c
@@ -31,13 +33,13 @@ def compute_ious(pred, label, classes, ignore_index=255, only_present=True, segm
     return ious if ious else [1]
 
 
-def compute_iou_batch(outputs, labels, classes=None):
+def compute_iou_batch(outputs, labels, classes=None, segmentation=False):
     '''computes mean iou for a batch of ground truth masks and predicted masks'''
     ious = []
     preds = np.copy(outputs)
     labels = np.array(labels)
     for pred, label in zip(preds, labels):
-        ious.append(np.nanmean(compute_ious(pred, label, classes)))
+        ious.append(np.nanmean(compute_ious(pred, label, classes, segmentation)))
     iou = np.nanmean(ious)
     return iou
 
@@ -74,8 +76,8 @@ def metric(probability, truth, threshold=0.5):
 
 class Meter:
     """A meter to keep track of iou and dice scores throughout an epoch"""
-    def __init__(self):
-        self.segmentation = True
+    def __init__(self, segmentation):
+        self.segmentation = segmentation
         self.base_threshold = 0.5
         self.base_dice_scores = []
         self.dice_neg_scores = []
@@ -91,7 +93,7 @@ class Meter:
         self.dice_pos_scores.extend(dice_pos)
         self.dice_neg_scores.extend(dice_neg)
         preds = predict(probs, self.base_threshold)
-        iou = compute_iou_batch(preds, targets, classes=[1])
+        iou = compute_iou_batch(preds, targets, classes=[1], segmentation=self.segmentation)
         self.iou_scores.append(iou)
 
     def get_metrics(self):
