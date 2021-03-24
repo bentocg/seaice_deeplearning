@@ -76,7 +76,7 @@ def main():
         start_epoch = checkpoint['epoch'] + 1
         epochs -= start_epoch
         model.load_state_dict(checkpoint['state_dict'])
-        optimizer.load_state_dict(checkpoint['state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
 
     # start training
     model_trainer = Trainer(model, optimizer, device=device, patch_size=args.patch_size,
