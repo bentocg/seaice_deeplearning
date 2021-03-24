@@ -7,7 +7,6 @@ import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch.backends.cudnn as cudnn
 import time
-from shutil import rmtree
 import os
 
 
@@ -134,7 +133,7 @@ class Trainer(object):
                 prev = [f'checkpoints/{ele}' for ele in os.listdir('checkpoints') if
                         ele.startswith(f'{self.model_name}_dice')]
                 for ele in prev:
-                    rmtree(ele)
+                    os.remove(ele)
 
                 print("******** New optimal found, saving state ********")
                 state["best_dice"] = self.best_dice = val_dice
