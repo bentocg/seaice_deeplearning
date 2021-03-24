@@ -2,10 +2,8 @@ __all__ = ['predict', 'metric', 'Meter', 'epoch_log', 'seed_all']
 
 import numpy as np
 import torch
-import cv2
 import os
 import random
-import time
 
 
 def predict(X, threshold):

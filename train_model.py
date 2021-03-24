@@ -30,8 +30,7 @@ def main():
     # load arguments
     args = parse_args()
     device = f'cuda:{args.device_id}' if torch.cuda.is_available() else 'cpu'
-    epochs = args.epochs
-    start_epoch = 0
+    state_dict = None
 
     # set seed
     seed_all(args.random_seed)
@@ -73,17 +72,14 @@ def main():
         print(f"Resuming from epoch {checkpoint['epoch']}")
 
         # skip past epochs and reload weights
-        start_epoch = checkpoint['epoch'] + 1
-        epochs -= start_epoch
-        model.load_state_dict(checkpoint['state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer'])
+        state_dict = checkpoint
 
     # start training
-    model_trainer = Trainer(model, optimizer, device=device, patch_size=args.patch_size,
-                            batch_size=(args.batch_size, args.batch_size * 2), epochs=epochs,
+    model_trainer = Trainer(model, device=device, patch_size=args.patch_size,
+                            batch_size=(args.batch_size, args.batch_size * 2), epochs=args.epochs,
                             data_folder=args.training_set,
                             model_name=model_name, segmentation=args.segmentation,
-                            start_epoch=start_epoch)
+                            state_dict=state_dict)
     model_trainer.start()
 
 

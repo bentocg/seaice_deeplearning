@@ -4,6 +4,8 @@ from utils.data_processing import provider
 from torch.utils.tensorboard import SummaryWriter
 
 import torch
+from torch import optim
+from torchvision import transforms
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch.backends.cudnn as cudnn
 import time
@@ -13,16 +15,16 @@ import os
 class Trainer(object):
     """This class takes care of training and validation of our segmentation models"""
 
-    def __init__(self, model, optimizer, model_name, device="cuda:0", batch_size=(64, 128), patch_size=256, epochs=20,
+    def __init__(self, model, model_name, device="cuda:0", batch_size=(64, 128), patch_size=256, epochs=20,
                  lr=1e-3, patience=3, data_folder='training_set_synthetic', segmentation=True,
-                 start_epoch=0):
+                 state_dict=None):
         self.fold = 1
         self.total_folds = 5
         self.num_workers = 0
         self.batch_size = {'train': batch_size[0], 'val': batch_size[1]}
         self.lr = lr
         self.num_epochs = epochs
-        self.start_epoch = start_epoch
+        self.start_epoch = 0
         self.best_iou = 0.0
         self.best_dice = 0.0
         self.phases = ["train", "val"]
@@ -30,9 +32,6 @@ class Trainer(object):
         self.segmentation = segmentation
         self.model_name = model_name
         self.global_step = 0
-        if self.start_epoch > 0:
-            agg_batch_size = (8 * self.batch_size['train'] + 2 * self.batch_size['val']) // 10
-            self.global_step = self.start_epoch * len(os.listdir(f'{data_folder}/x')) // agg_batch_size
         if torch.cuda.is_available():
             torch.set_default_tensor_type("torch.cuda.FloatTensor")
         self.net = model
@@ -40,7 +39,24 @@ class Trainer(object):
             self.criterion = MixedLoss(10.0, 2.0)
         else:
             self.criterion = FocalLoss(2.0)
-        self.optimizer = optimizer
+        self.optimizer = optim.Adam(self.net.parameters(), lr=self.lr)
+        if state_dict:
+            self.start_epoch = state_dict['epoch']
+            self.global_step = state_dict['global_step']
+            self.best_iou = state_dict['best_iou']
+            self.best_dice = state_dict['best_dice']
+            self.net.load_state_dict(state_dict['state_dict'])
+            self.optimizer.load_state_dict(state_dict['optimizer'])
+            self.state = state_dict
+        else:
+            self.state = {
+                "epoch": 0,
+                "global_step": 0,
+                "best_dice": 0,
+                "best_iou": 0,
+                "state_dict": self.net.state_dict(),
+                "optimizer": self.optimizer.state_dict()
+            }
         self.scheduler = ReduceLROnPlateau(self.optimizer, mode="max", patience=patience, verbose=True)
         self.net = self.net.to(self.device)
         cudnn.benchmark = True
@@ -61,6 +77,11 @@ class Trainer(object):
         self.losses = {phase: [] for phase in self.phases}
         self.dice_scores = {phase: [] for phase in self.phases}
         self.iou_scores = {phase: [] for phase in self.phases}
+        self.writer = SummaryWriter(comment=self.model_name)
+        self.inv_normalize = transforms.Normalize(
+            mean=[-0.485 / 0.229, -0.456 / 0.224, -0.406 / 0.255],
+            std=[1 / 0.229, 1 / 0.224, 1 / 0.255]
+        )
 
     def forward(self, images, targets):
         images = images.to(self.device)
@@ -70,7 +91,6 @@ class Trainer(object):
         return loss, outputs
 
     def iterate(self, epoch, phase):
-        writer = SummaryWriter(comment=self.model_name)
         meter = Meter(segmentation=self.segmentation)
         start = time.strftime("%H:%M:%S")
         print(f"Starting epoch: {epoch} | phase: {phase} | ⏰: {start}")
@@ -88,7 +108,7 @@ class Trainer(object):
                 self.optimizer.step()
                 self.optimizer.zero_grad()
             if self.global_step % 10 == 0:
-                writer.add_scalar(f'Loss/{phase}', loss.item())
+                self.writer.add_scalar(f'Loss/{phase}', loss.item(), self.global_step)
             running_loss += loss.item()
             meter.update(targets, outputs)
             self.global_step += 1
@@ -97,37 +117,35 @@ class Trainer(object):
         self.losses[phase].append(epoch_loss)
         self.dice_scores[phase].append(dice)
         self.iou_scores[phase].append(iou)
-        writer.add_scalar(f'Dice/{phase}', dice, self.global_step)
-        writer.add_scalar(f'IoU/{phase}', iou, self.global_step)
+        self.writer.add_scalar(f'Dice/{phase}', dice, epoch)
+        self.writer.add_scalar(f'IoU/{phase}', iou, epoch)
         p = torch.tensor([1 / len(images)] * len(images))
-        idcs = p.multinomial(10)
-        writer.add_images(f'input_images/{phase}', images[idcs], self.global_step)
+        idcs = p.multinomial(min(10, len(images)))
+        images = self.inv_normalize(images)
+
+        self.writer.add_images(f'input_images/{phase}', images[idcs], epoch)
         if self.segmentation:
-            writer.add_images(f'masks_true/{phase}', targets[idcs], self.global_step)
+            self.writer.add_images(f'masks_true/{phase}', targets[idcs] * 255, epoch)
             masks_pred = torch.sigmoid(outputs[idcs])
-            writer.add_images(f'masks_pred/{phase}', (masks_pred > 0.5).float(), self.global_step)
+            self.writer.add_images(f'masks_pred/{phase}', (masks_pred > 0.5).float(), epoch)
         else:
-            writer.add_scalar(f'true_label/{phase}', targets[idcs], self.global_step)
+            self.writer.add_scalar(f'true_label/{phase}', targets[idcs], epoch)
             label_pred = torch.sigmoid(outputs[idcs])
-            writer.add_scalar(f'predicted_label/{phase}', (label_pred > 0.5).float())
+            self.writer.add_scalar(f'predicted_label/{phase}', (label_pred > 0.5).float(), epoch)
 
         torch.cuda.empty_cache()
+        self.state['epoch'] = epoch
+        self.state['global_step'] = self.global_step
         return dice, iou
 
     def start(self):
-        for epoch in range(self.start_epoch, self.start_epoch + self.num_epochs):
+        for epoch in range(self.start_epoch, self.num_epochs):
             self.iterate(epoch, "train")
-            state = {
-                "epoch": epoch,
-                "best_dice": self.best_dice,
-                "best_iou": self.best_iou,
-                "state_dict": self.net.state_dict(),
-                "optimizer": self.optimizer.state_dict()
-            }
+
             with torch.no_grad():
                 val_dice, val_iou = self.iterate(epoch, "val")
             self.scheduler.step(val_dice)
-            torch.save(state,  f"checkpoints/{self.model_name})_last.pth")
+            torch.save(self.state,  f"checkpoints/{self.model_name})_last.pth")
             if val_dice > self.best_dice:
                 # remove previous best checkpoint for this model
                 prev = [f'checkpoints/{ele}' for ele in os.listdir('checkpoints') if
@@ -136,8 +154,8 @@ class Trainer(object):
                     os.remove(ele)
 
                 print("******** New optimal found, saving state ********")
-                state["best_dice"] = self.best_dice = val_dice
-                state["best_iou"] = self.best_iou = val_iou
-                torch.save(state, f"checkpoints/{self.model_name}_dice-{self.best_dice}_iou-{self.best_iou}_epoch-{epoch}.pth")
+                self.state["best_dice"] = self.best_dice = val_dice
+                self.state["best_iou"] = self.best_iou = val_iou
+                torch.save(self.state, f"checkpoints/{self.model_name}_dice-{self.best_dice}_iou-{self.best_iou}_epoch-{epoch}.pth")
             print()
         quit()
