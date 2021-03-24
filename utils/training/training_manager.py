@@ -1,11 +1,14 @@
 from utils.training import Meter, epoch_log
 from utils.loss_functions import MixedLoss, FocalLoss
 from utils.data_processing import provider
+from torch.utils.tensorboard import SummaryWriter
 
 import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch.backends.cudnn as cudnn
 import time
+from shutil import rmtree
+import os
 
 
 class Trainer(object):
@@ -27,6 +30,10 @@ class Trainer(object):
         self.device = device
         self.segmentation = segmentation
         self.model_name = model_name
+        self.global_step = 0
+        if self.start_epoch > 0:
+            agg_batch_size = (8 * self.batch_size['train'] + 2 * self.batch_size['val']) // 10
+            self.global_step = self.start_epoch * len(os.listdir(f'{data_folder}/x')) // agg_batch_size
         if torch.cuda.is_available():
             torch.set_default_tensor_type("torch.cuda.FloatTensor")
         self.net = model
@@ -64,6 +71,7 @@ class Trainer(object):
         return loss, outputs
 
     def iterate(self, epoch, phase):
+        writer = SummaryWriter(comment=self.model_name)
         meter = Meter(segmentation=self.segmentation)
         start = time.strftime("%H:%M:%S")
         print(f"Starting epoch: {epoch} | phase: {phase} | ⏰: {start}")
@@ -80,13 +88,30 @@ class Trainer(object):
                 loss.backward()
                 self.optimizer.step()
                 self.optimizer.zero_grad()
+            if self.global_step % 10 == 0:
+                writer.add_scalar(f'Loss/{phase}', loss.item())
             running_loss += loss.item()
             meter.update(targets, outputs)
+            self.global_step += 1
         epoch_loss = running_loss / (total_batches * batch_size)
         dice, iou = epoch_log(epoch_loss, meter)
         self.losses[phase].append(epoch_loss)
         self.dice_scores[phase].append(dice)
         self.iou_scores[phase].append(iou)
+        writer.add_scalar(f'Dice/{phase}', dice, self.global_step)
+        writer.add_scalar(f'IoU/{phase}', iou, self.global_step)
+        p = torch.tensor([1 / len(images)] * len(images))
+        idcs = p.multinomial(10)
+        writer.add_images(f'input_images/{phase}', images[idcs], self.global_step)
+        if self.segmentation:
+            writer.add_images(f'masks_true/{phase}', targets[idcs], self.global_step)
+            masks_pred = torch.sigmoid(outputs[idcs])
+            writer.add_images(f'masks_pred/{phase}', (masks_pred > 0.5).float(), self.global_step)
+        else:
+            writer.add_scalar(f'true_label/{phase}', targets[idcs], self.global_step)
+            label_pred = torch.sigmoid(outputs[idcs])
+            writer.add_scalar(f'predicted_label/{phase}', (label_pred > 0.5).float())
+
         torch.cuda.empty_cache()
         return dice, iou
 
@@ -98,12 +123,19 @@ class Trainer(object):
                 "best_dice": self.best_dice,
                 "best_iou": self.best_iou,
                 "state_dict": self.net.state_dict(),
-                "optimizer": self.optimizer.state_dict(),
+                "optimizer": self.optimizer.state_dict()
             }
             with torch.no_grad():
                 val_dice, val_iou = self.iterate(epoch, "val")
             self.scheduler.step(val_dice)
+            torch.save(state,  f"checkpoints/{self.model_name})_last.pth")
             if val_dice > self.best_dice:
+                # remove previous best checkpoint for this model
+                prev = [f'checkpoints/{ele}' for ele in os.listdir('checkpoints') if
+                        ele.startswith(f'{self.model_name}_dice')]
+                for ele in prev:
+                    rmtree(ele)
+
                 print("******** New optimal found, saving state ********")
                 state["best_dice"] = self.best_dice = val_dice
                 state["best_iou"] = self.best_iou = val_iou

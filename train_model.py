@@ -6,7 +6,6 @@ from utils.training.training_manager import Trainer
 from utils.training.utility import seed_all
 from torch import optim
 import os
-import re
 
 
 def parse_args():
@@ -67,13 +66,11 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
     # see if a checkpoint for this model already exists, load weights if it does
-    matches = [ele for ele in os.listdir('checkpoints') if ele.startswith(model_name)]
-    if len(matches) > 0:
-        checkpoint = sorted(matches, key=lambda x: int(re.search(r'epoch-[0-9]+',
-                                                                 x).group(0)[6:]))[-1]
-        print(f'Resuming from {checkpoint}')
+    checkpoint = f"checkpoints/{model_name}_last.pth"
+    if os.path.exists(checkpoint):
         checkpoint = torch.load(f'checkpoints/{checkpoint}',
                                 map_location=torch.device(device))
+        print(f"Resuming from epoch {checkpoint['epoch']}")
 
         # skip past epochs and reload weights
         start_epoch = checkpoint['epoch'] + 1
