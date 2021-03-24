@@ -4,6 +4,7 @@ from torchvision.models.resnet import resnet34
 import segmentation_models_pytorch as smp
 from utils.training.training_manager import Trainer
 from utils.training.utility import seed_all
+from torch import optim
 import os
 import re
 
@@ -62,24 +63,28 @@ def main():
         model = resnet34(num_classes=1)
         model_name = f"Resnet34_{args.patch_size}_{args.learning_rate}_{args.batch_size}"
 
+    # start optimizer
+    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
+
     # see if a checkpoint for this model already exists, load weights if it does
     matches = [ele for ele in os.listdir('checkpoints') if ele.startswith(model_name)]
     if len(matches) > 0:
         checkpoint = sorted(matches, key=lambda x: int(re.search(r'epoch-[0-9]+',
                                                                  x).group(0)[6:]))[-1]
-        state_dict = torch.load(f'checkpoints/{checkpoint}',
-                                map_location=torch.device(device))['state_dict']
         print(f'Resuming from {checkpoint}')
+        checkpoint = torch.load(f'checkpoints/{checkpoint}',
+                                map_location=torch.device(device))
 
-        # skip past epochs
-        start_epoch = int(re.search(r'epoch-[0-9]+', checkpoint).group(0)[6:]) + 1
+        # skip past epochs and reload weights
+        start_epoch = checkpoint['epoch'] + 1
         epochs -= start_epoch
-        model.load_state_dict(state_dict)
+        model.load_state_dict(checkpoint['state_dict'])
+        optimizer.load_state_dict(checkpoint['state_dict'])
 
     # start training
-    model_trainer = Trainer(model, device=device, patch_size=args.patch_size,
+    model_trainer = Trainer(model, optimizer, device=device, patch_size=args.patch_size,
                             batch_size=(args.batch_size, args.batch_size * 2), epochs=epochs,
-                            lr=args.learning_rate, data_folder=args.training_set,
+                            data_folder=args.training_set,
                             model_name=model_name, segmentation=args.segmentation,
                             start_epoch=start_epoch)
     model_trainer.start()

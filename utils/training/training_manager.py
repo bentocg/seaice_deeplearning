@@ -2,7 +2,6 @@ from utils.training import Meter, epoch_log
 from utils.loss_functions import MixedLoss, FocalLoss
 from utils.data_processing import provider
 
-import torch.optim as optim
 import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch.backends.cudnn as cudnn
@@ -12,7 +11,7 @@ import time
 class Trainer(object):
     """This class takes care of training and validation of our segmentation models"""
 
-    def __init__(self, model, model_name, device="cuda:0", batch_size=(64, 128), patch_size=256, epochs=20,
+    def __init__(self, model, optimizer, model_name, device="cuda:0", batch_size=(64, 128), patch_size=256, epochs=20,
                  lr=1e-3, patience=3, data_folder='training_set_synthetic', segmentation=True,
                  start_epoch=0):
         self.fold = 1
@@ -35,7 +34,7 @@ class Trainer(object):
             self.criterion = MixedLoss(10.0, 2.0)
         else:
             self.criterion = FocalLoss(2.0)
-        self.optimizer = optim.Adam(self.net.parameters(), lr=self.lr)
+        self.optimizer = optimizer
         self.scheduler = ReduceLROnPlateau(self.optimizer, mode="max", patience=patience, verbose=True)
         self.net = self.net.to(self.device)
         cudnn.benchmark = True
