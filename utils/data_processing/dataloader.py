@@ -28,7 +28,8 @@ def provider(fold, total_folds, df_path, data_folder, phase, size, batch_size=8,
             batch_size=batch_size,
             num_workers=num_workers,
             pin_memory=False,
-            sampler=BalancedBatchSampler(image_dataset, image_dataset.bin_labels)
+            sampler=BalancedBatchSampler(image_dataset, image_dataset.bin_labels),
+            drop_last=True
         )
 
     else:
