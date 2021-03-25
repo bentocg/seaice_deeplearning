@@ -77,7 +77,7 @@ def main():
     # start training
     model_trainer = Trainer(model, device=device, patch_size=args.patch_size,
                             batch_size=(args.batch_size, args.batch_size * 2), epochs=args.epochs,
-                            data_folder=args.training_set,
+                            data_folder=args.training_set, lr=args.learning_rate,
                             model_name=model_name, segmentation=args.segmentation,
                             state_dict=state_dict)
     model_trainer.start()
