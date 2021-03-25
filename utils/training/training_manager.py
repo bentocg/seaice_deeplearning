@@ -145,7 +145,7 @@ class Trainer(object):
             with torch.no_grad():
                 val_dice, val_iou = self.iterate(epoch, "val")
             self.scheduler.step(val_dice)
-            torch.save(self.state,  f"checkpoints/{self.model_name})_last.pth")
+            torch.save(self.state,  f"checkpoints/{self.model_name}_last.pth")
             if val_dice > self.best_dice:
                 # remove previous best checkpoint for this model
                 prev = [f'checkpoints/{ele}' for ele in os.listdir('checkpoints') if
