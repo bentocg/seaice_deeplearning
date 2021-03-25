@@ -15,7 +15,7 @@ def predict(X, threshold):
 def compute_ious(pred, label, classes, only_present=True):
     '''computes iou for one ground truth mask and predicted mask'''
     if np.max(label) == 255:
-        label /= 255
+        label = np.divide(label, 255, casting='unsafe')
 
     ious = []
     for c in classes:
