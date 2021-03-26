@@ -145,13 +145,15 @@ class Trainer(object):
         outputs = torch.sigmoid(outputs[idcs])
         outputs = (outputs > 0.5).float()
         targets = targets[idcs]
+        images = torch.clamp(images, 0, 1)
 
         if self.segmentation:
             targets *= 255
             grid = torchvision.utils.make_grid(torch.vstack([images,
                                                              targets.repeat(1, 3, 1, 1),
                                                              outputs.repeat(1, 3, 1, 1)]),
-                                               nrow=6, value_range=(0, 255))
+                                               nrow=6, value_range=(0, 255),
+                                               scale_each=True)
             grid = torch.unsqueeze(grid, 0)
             self.writer.add_images(f'input_images/{phase}', grid, epoch)
 
