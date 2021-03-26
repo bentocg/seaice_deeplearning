@@ -67,7 +67,7 @@ def main():
     # see if a checkpoint for this model already exists, load weights if it does
     checkpoint = f"checkpoints/{model_name}_last.pth"
     if os.path.exists(checkpoint):
-        checkpoint = torch.load(f'checkpoints/{checkpoint}',
+        checkpoint = torch.load(checkpoint,
                                 map_location=torch.device(device))
         print(f"Resuming from epoch {checkpoint['epoch']}")
 

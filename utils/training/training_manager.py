@@ -4,12 +4,15 @@ from utils.data_processing import provider
 from torch.utils.tensorboard import SummaryWriter
 
 import torch
+import torchvision
 from torch import optim
 from torchvision import transforms
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch.backends.cudnn as cudnn
 import time
 import os
+import numpy as np
+import cv2
 
 
 class Trainer(object):
@@ -77,7 +80,7 @@ class Trainer(object):
         self.losses = {phase: [] for phase in self.phases}
         self.dice_scores = {phase: [] for phase in self.phases}
         self.iou_scores = {phase: [] for phase in self.phases}
-        self.writer = SummaryWriter(comment=self.model_name)
+        self.writer = SummaryWriter(f"runs/{self.model_name}")
         self.inv_normalize = transforms.Normalize(
             mean=[-0.485 / 0.229, -0.456 / 0.224, -0.406 / 0.255],
             std=[1 / 0.229, 1 / 0.224, 1 / 0.255]
@@ -89,6 +92,23 @@ class Trainer(object):
         outputs = self.net(images)
         loss = self.criterion(outputs, targets)
         return loss, outputs
+
+    @staticmethod
+    def put_text(images, targets, preds):
+        result = np.empty_like(images)
+        for i in range(images.shape[0]):
+            label = f'truth={targets[i].item()}'
+            pred = f'pred={preds[i].item()}'
+            patch_size = images.shape[-1]
+            image = cv2.UMat(np.float32(images[i, :, :, :]).copy().transpose(1, 2, 0))
+            image = cv2.putText(image, str(label), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, (0.5 / 256) * patch_size,
+                                color=(0.1, 1, 0.2), thickness=2)
+            image = cv2.putText(image, str(pred), (10, 60), cv2.FONT_HERSHEY_SIMPLEX, (0.5 / 256) * patch_size,
+                                color=(0.1, 1, 0.2), thickness=2)
+
+            result[i, :, :, :] = image.get().transpose(2, 0, 1)
+
+        return result
 
     def iterate(self, epoch, phase):
         meter = Meter(segmentation=self.segmentation)
@@ -120,18 +140,26 @@ class Trainer(object):
         self.writer.add_scalar(f'Dice/{phase}', dice, epoch)
         self.writer.add_scalar(f'IoU/{phase}', iou, epoch)
         p = torch.tensor([1 / len(images)] * len(images))
-        idcs = p.multinomial(min(10, len(images)))
-        images = self.inv_normalize(images)
+        idcs = p.multinomial(min(6, len(images)))
+        images = self.inv_normalize(images)[idcs]
+        outputs = torch.sigmoid(outputs[idcs])
+        outputs = (outputs > 0.5).float()
+        targets = targets[idcs]
 
-        self.writer.add_images(f'input_images/{phase}', images[idcs], epoch)
         if self.segmentation:
-            self.writer.add_images(f'masks_true/{phase}', targets[idcs] * 255, epoch)
-            masks_pred = torch.sigmoid(outputs[idcs])
-            self.writer.add_images(f'masks_pred/{phase}', (masks_pred > 0.5).float(), epoch)
+            targets *= 255
+            grid = torchvision.utils.make_grid(torch.vstack([images,
+                                                             targets.repeat(1, 3, 1, 1),
+                                                             outputs.repeat(1, 3, 1, 1)]),
+                                               nrow=6, value_range=(0, 255))
+            grid = torch.unsqueeze(grid, 0)
+            self.writer.add_images(f'input_images/{phase}', grid, epoch)
+
         else:
-            self.writer.add_scalar(f'true_label/{phase}', targets[idcs], epoch)
-            label_pred = torch.sigmoid(outputs[idcs])
-            self.writer.add_scalar(f'predicted_label/{phase}', (label_pred > 0.5).float(), epoch)
+            self.writer.add_images(f'labelled_images/{phase}', self.put_text(
+                images.detach().float(),
+                targets.detach().float(),
+                outputs.detach().float()), epoch)
 
         torch.cuda.empty_cache()
         self.state['epoch'] = epoch
@@ -139,6 +167,7 @@ class Trainer(object):
         return dice, iou
 
     def start(self):
+        os.makedirs('checkpoints', exist_ok=True)
         for epoch in range(self.start_epoch, self.num_epochs):
             self.iterate(epoch, "train")
 
@@ -156,6 +185,7 @@ class Trainer(object):
                 print("******** New optimal found, saving state ********")
                 self.state["best_dice"] = self.best_dice = val_dice
                 self.state["best_iou"] = self.best_iou = val_iou
-                torch.save(self.state, f"checkpoints/{self.model_name}_dice-{self.best_dice}_iou-{self.best_iou}_epoch-{epoch}.pth")
+                torch.save(self.state, f"checkpoints/{self.model_name}_dice-{self.best_dice}"
+                                       f"_iou-{self.best_iou}_epoch-{epoch}.pth")
             print()
         quit()
