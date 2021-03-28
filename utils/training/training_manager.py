@@ -44,7 +44,7 @@ class Trainer(object):
             self.criterion = FocalLoss(2.0)
         self.optimizer = optim.Adam(self.net.parameters(), lr=self.lr)
         if state_dict:
-            self.start_epoch = state_dict['epoch']
+            self.start_epoch = state_dict['epoch'] + 1
             self.global_step = state_dict['global_step']
             self.best_iou = state_dict['best_iou']
             self.best_dice = state_dict['best_dice']
