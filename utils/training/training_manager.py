@@ -143,12 +143,9 @@ class Trainer(object):
         idcs = p.multinomial(min(6, len(images)))
         images = self.inv_normalize(images)[idcs]
         outputs = torch.sigmoid(outputs[idcs])
-        outputs = (outputs > 0.5).float()
+        outputs = (outputs > 0.5).detach().float()
         targets = targets[idcs]
         images = torch.clamp(images, 0, 1)
-        print(outputs)
-        print(targets)
-        print(images)
 
         if self.segmentation:
             targets *= 255
