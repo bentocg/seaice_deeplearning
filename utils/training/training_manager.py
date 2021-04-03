@@ -146,12 +146,10 @@ class Trainer(object):
         outputs = (outputs > 0.5).detach().float()
         targets = targets[idcs]
         images = torch.clamp(images, 0, 1)
-        print(images)
-        print(targets)
-        print(outputs)
 
         if self.segmentation:
             targets *= 255
+            outputs = outputs.cpu()
             grid = torchvision.utils.make_grid(torch.vstack([images,
                                                              targets.repeat(1, 3, 1, 1),
                                                              outputs.repeat(1, 3, 1, 1)]),
@@ -164,7 +162,7 @@ class Trainer(object):
             self.writer.add_images(f'labelled_images/{phase}', self.put_text(
                 images.detach().float(),
                 targets.detach().float(),
-                outputs.detach().float()), epoch)
+                outputs), epoch)
 
         torch.cuda.empty_cache()
         self.state['epoch'] = epoch
