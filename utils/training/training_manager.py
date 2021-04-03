@@ -146,6 +146,9 @@ class Trainer(object):
         outputs = (outputs > 0.5).float()
         targets = targets[idcs]
         images = torch.clamp(images, 0, 1)
+        print(outputs)
+        print(targets)
+        print(images)
 
         if self.segmentation:
             targets *= 255
