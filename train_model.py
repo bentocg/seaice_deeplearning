@@ -4,8 +4,8 @@ from torchvision.models.resnet import resnet34
 import segmentation_models_pytorch as smp
 from utils.training.training_manager import Trainer
 from utils.training.utility import seed_all
-from torch import optim
 import os
+import re
 
 
 def parse_args():
@@ -39,9 +39,17 @@ def main():
     if args.segmentation:
         model = smp.Unet("resnet34", encoder_weights="imagenet", activation=None)
 
+        # update with pretrained weights from classification
         if args.finetune:
-            # update with pretrained weights from classification
-            pretrained_dict = torch.load(f'checkpoints/Resnet34_{args.patch_size}_best.pth',
+
+            # find best_weights for current patch size
+            model_names = [ele for ele in os.listdir('checkpoints') if ele.startswith(f'Resnet34_{args.patch_size}')
+                           and 'last' not in ele]
+            best = sorted(model_names,
+                          key=lambda x: float(re.search('dice-[0-9]{1}.[0-9]+', x).group(0).split('-')[-1]))[-1]
+
+            # load pretrained dict
+            pretrained_dict = torch.load(f'checkpoints/{best}',
                                          map_location=torch.device(device))['state_dict']
             pretrained_dict = {f'encoder.{k}': v for k, v in pretrained_dict.items()}
             model_dict = model.state_dict()
@@ -60,9 +68,6 @@ def main():
     else:
         model = resnet34(num_classes=1)
         model_name = f"Resnet34_{args.patch_size}_{args.learning_rate}_{args.batch_size}"
-
-    # start optimizer
-    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
     # see if a checkpoint for this model already exists, load weights if it does
     checkpoint = f"checkpoints/{model_name}_last.pth"

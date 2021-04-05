@@ -139,6 +139,7 @@ class Trainer(object):
         self.iou_scores[phase].append(iou)
         self.writer.add_scalar(f'Dice/{phase}', dice, epoch)
         self.writer.add_scalar(f'IoU/{phase}', iou, epoch)
+        self.writer.add_scalar('learning rate', epoch)
         p = torch.tensor([1 / len(images)] * len(images))
         idcs = p.multinomial(min(6, len(images)))
         images = self.inv_normalize(images)[idcs]
@@ -172,9 +173,11 @@ class Trainer(object):
     def start(self):
         os.makedirs('checkpoints', exist_ok=True)
         for epoch in range(self.start_epoch, self.num_epochs):
+            self.net.train()
             self.iterate(epoch, "train")
 
             with torch.no_grad():
+                self.net.eval()
                 val_dice, val_iou = self.iterate(epoch, "val")
             self.scheduler.step(val_dice)
             torch.save(self.state,  f"checkpoints/{self.model_name}_last.pth")
