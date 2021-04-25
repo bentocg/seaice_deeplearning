@@ -19,18 +19,17 @@ class Trainer(object):
     """This class takes care of training and validation of our segmentation models"""
 
     def __init__(self, model, model_name, device="cuda:0", batch_size=(64, 128), patch_size=256, epochs=20,
-                 lr=1e-3, patience=3, data_folder='training_set_synthetic', segmentation=True,
-                 state_dict=None):
-        self.fold = 1
-        self.total_folds = 5
+                 lr=1e-3, patience=3, tsets=('hand', 'synthetic'), data_folder='training_set_synthetic', segmentation=True,
+                 state_dict=None, is_hand_weight=3):
+        self.is_hand_weight = is_hand_weight
         self.num_workers = 0
-        self.batch_size = {'train': batch_size[0], 'val': batch_size[1]}
+        self.batch_size = {'training': batch_size[0], 'validation': batch_size[1]}
         self.lr = lr
         self.num_epochs = epochs
         self.start_epoch = 0
         self.best_iou = 0.0
         self.best_dice = 0.0
-        self.phases = ["train", "val"]
+        self.phases = ["training", "validation"]
         self.device = device
         self.segmentation = segmentation
         self.model_name = model_name
@@ -39,10 +38,10 @@ class Trainer(object):
             torch.set_default_tensor_type("torch.cuda.FloatTensor")
         self.net = model
         if self.segmentation:
-            self.criterion = MixedLoss(10.0, 2.0)
+            self.criterion = MixedLoss(10.0, 2.0, self.is_hand_weight)
         else:
-            self.criterion = FocalLoss(2.0)
-        self.optimizer = optim.Adam(self.net.parameters(), lr=self.lr)
+            self.criterion = FocalLoss(2.0, self.is_hand_weight)
+        self.optimizer = optim.AdamW(self.net.parameters(), lr=self.lr)
         if state_dict:
             self.start_epoch = state_dict['epoch'] + 1
             self.global_step = state_dict['global_step']
@@ -65,9 +64,8 @@ class Trainer(object):
         cudnn.benchmark = True
         self.dataloaders = {
             phase: provider(
-                fold=1,
-                total_folds=5,
                 segmentation=self.segmentation,
+                tsets=tsets,
                 data_folder=data_folder,
                 df_path=f'{data_folder}/labels.csv',
                 phase=phase,
@@ -86,11 +84,11 @@ class Trainer(object):
             std=[1 / 0.229, 1 / 0.224, 1 / 0.255]
         )
 
-    def forward(self, images, targets):
+    def forward(self, images, targets, is_hand):
         images = images.to(self.device)
         targets = targets.to(self.device)
         outputs = self.net(images)
-        loss = self.criterion(outputs, targets)
+        loss = self.criterion(outputs, targets, is_hand)
         return loss, outputs
 
     @staticmethod
@@ -115,15 +113,16 @@ class Trainer(object):
         start = time.strftime("%H:%M:%S")
         print(f"Starting epoch: {epoch} | phase: {phase} | ⏰: {start}")
         batch_size = self.batch_size[phase]
-        self.net.train(phase == "train")
+        self.net.train(phase == "training")
         dataloader = self.dataloaders[phase]
         running_loss = 0.0
         total_batches = len(dataloader)
         self.optimizer.zero_grad()
         for itr, batch in enumerate(dataloader):
-            images, targets = batch[0], batch[-1]
-            loss, outputs = self.forward(images, targets)
-            if phase == "train":
+            print('.', end='')
+            images, is_hand, targets = batch[0], batch[1], batch[-1]
+            loss, outputs = self.forward(images, targets, is_hand)
+            if phase == "training":
                 loss.backward()
                 self.optimizer.step()
                 self.optimizer.zero_grad()
@@ -174,11 +173,11 @@ class Trainer(object):
         os.makedirs('checkpoints', exist_ok=True)
         for epoch in range(self.start_epoch, self.num_epochs):
             self.net.train()
-            self.iterate(epoch, "train")
+            self.iterate(epoch, "training")
 
             with torch.no_grad():
                 self.net.eval()
-                val_dice, val_iou = self.iterate(epoch, "val")
+                val_dice, val_iou = self.iterate(epoch, "validation")
             self.scheduler.step(val_dice)
             torch.save(self.state,  f"checkpoints/{self.model_name}_last.pth")
             if val_dice > self.best_dice:
