@@ -170,8 +170,10 @@ class Trainer(object):
         return dice, iou
 
     def start(self):
+        since = 0
         os.makedirs('checkpoints', exist_ok=True)
         for epoch in range(self.start_epoch, self.num_epochs):
+            since += 1
             self.net.train()
             self.iterate(epoch, "training")
 
@@ -181,6 +183,7 @@ class Trainer(object):
             self.scheduler.step(val_dice)
             torch.save(self.state,  f"checkpoints/{self.model_name}_last.pth")
             if val_dice > self.best_dice:
+                since = 0
                 # remove previous best checkpoint for this model
                 prev = [f'checkpoints/{ele}' for ele in os.listdir('checkpoints') if
                         ele.startswith(f'{self.model_name}_dice')]
@@ -193,4 +196,7 @@ class Trainer(object):
                 torch.save(self.state, f"checkpoints/{self.model_name}_dice-{self.best_dice}"
                                        f"_iou-{self.best_iou}_epoch-{epoch}.pth")
             print()
+            if since == 5:
+                print('Did not improve for 5 epochs, early stopping triggered')
+                quit()
         quit()
