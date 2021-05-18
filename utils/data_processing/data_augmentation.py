@@ -15,11 +15,7 @@ def train_transform(size):
             A.IAAAdditiveGaussianNoise(),
             A.GaussNoise(),
         ], p=0.2),
-        A.OneOf([
-            A.MotionBlur(p=0.2),
-            A.MedianBlur(blur_limit=3, p=0.1),
-            A.Blur(blur_limit=3, p=0.1),
-        ], p=0.2),      
+     
         A.OneOf([
             A.OpticalDistortion(p=0.3),
             A.GridDistortion(p=0.1),
@@ -32,7 +28,7 @@ def train_transform(size):
             A.RandomContrast(),
             A.RandomBrightness(),
         ], p=0.3),
-        A.HueSaturationValue(p=0.4, hue_shift_limit=10, val_shift_limit=10, sat_shift_limit=15),
+        A.HueSaturationValue(p=0.4, hue_shift_limit=5, val_shift_limit=5, sat_shift_limit=5),
         A.Flip(p=0.66),
         A.CenterCrop(height=size, width=size),
         A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),

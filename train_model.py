@@ -12,7 +12,7 @@ def parse_args():
     parser = ArgumentParser('Inputs for temple classification pipeline')
     parser.add_argument('--training_set', '-t', type=str, help='path to training set')
     parser.add_argument('--batch_size', '-b', type=int, default=64, help='batch size for training and validation')
-    parser.add_argument('--learning_rate', '-l', type=float, default=0.001, help='learning rate for training')
+    parser.add_argument('--learning_rate', '-l', type=float, default=0.0005, help='learning rate for training')
     parser.add_argument('--patch_size', '-p', type=int, default=256, help='patch size for images')
     parser.add_argument('--epochs', '-e', type=int, default=25, help='number of epochs for training')
     parser.add_argument('--segmentation', '-s', type=int, default=0, help='switch for segmentation'
@@ -84,7 +84,7 @@ def main():
                             batch_size=(args.batch_size, args.batch_size * 2), epochs=args.epochs,
                             data_folder=args.training_set, lr=args.learning_rate,
                             model_name=model_name, segmentation=args.segmentation,
-                            state_dict=state_dict)
+                            state_dict=state_dict, tsets=tuple(['synthetic', 'hand']))
     model_trainer.start()
 
 

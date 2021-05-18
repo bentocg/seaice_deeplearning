@@ -89,6 +89,8 @@ class SeaIceDataset(Dataset):
                     label = self.bin_labels[idx]
         is_hand = self.is_hand[idx]
         if self.segmentation:
+            if mask.sum() == 0:
+                label = 0
             return img, is_hand, label, mask
 
         else:

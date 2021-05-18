@@ -19,8 +19,8 @@ class Trainer(object):
     """This class takes care of training and validation of our segmentation models"""
 
     def __init__(self, model, model_name, device="cuda:0", batch_size=(64, 128), patch_size=256, epochs=20,
-                 lr=1e-3, patience=3, tsets=('hand', 'synthetic'), data_folder='training_set_synthetic', segmentation=True,
-                 state_dict=None, is_hand_weight=3):
+                 lr=1e-3, patience=3, tsets=('hand'), data_folder='training_set_synthetic', segmentation=True,
+                 state_dict=None, is_hand_weight=2.0):
         self.is_hand_weight = is_hand_weight
         self.num_workers = 0
         self.batch_size = {'training': batch_size[0], 'validation': batch_size[1]}
