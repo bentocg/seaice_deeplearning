@@ -22,7 +22,7 @@ class Trainer(object):
                  lr=1e-3, patience=3, tsets=('hand'), data_folder='training_set_synthetic', segmentation=True,
                  state_dict=None, is_hand_weight=2.0):
         self.is_hand_weight = is_hand_weight
-        self.num_workers = 0
+        self.num_workers = 4
         self.batch_size = {'training': batch_size[0], 'validation': batch_size[1]}
         self.lr = lr
         self.num_epochs = epochs
@@ -196,7 +196,7 @@ class Trainer(object):
                 torch.save(self.state, f"checkpoints/{self.model_name}_dice-{self.best_dice}"
                                        f"_iou-{self.best_iou}_epoch-{epoch}.pth")
             print()
-            if since == 10:
+            if since == 5:
                 print(f'Did not improve for {since} epochs, early stopping triggered')
                 quit()
         quit()
