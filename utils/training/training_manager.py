@@ -196,7 +196,7 @@ class Trainer(object):
                 torch.save(self.state, f"checkpoints/{self.model_name}_dice-{self.best_dice}"
                                        f"_iou-{self.best_iou}_epoch-{epoch}.pth")
             print()
-            if since == 5:
-                print('Did not improve for 5 epochs, early stopping triggered')
+            if since == 10:
+                print(f'Did not improve for {since} epochs, early stopping triggered')
                 quit()
         quit()

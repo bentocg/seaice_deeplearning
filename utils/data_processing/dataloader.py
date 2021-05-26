@@ -6,11 +6,12 @@ from .balanced_batch_sampler import BalancedBatchSampler
 
 
 def provider(df_path, data_folder, phase, size, tsets, batch_size=8, num_workers=8,
-             segmentation=False):
+             segmentation=False, augmentation_mode='simple'):
     df = pd.read_csv(df_path)
     
     image_dataset = SeaIceDataset(df=df, data_folder=data_folder, phase=phase, tsets=tsets, 
-                                  size=size, segmentation=segmentation)
+                                  size=size, segmentation=segmentation, 
+                                  augmentation_mode=augmentation_mode)
     if phase == 'train':
         dataloader = DataLoader(
             image_dataset,

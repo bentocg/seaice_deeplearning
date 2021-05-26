@@ -8,7 +8,7 @@ from torch.nn import functional as F
 def dice_loss(pred, target, is_hand, weight):
     pred = torch.sigmoid(pred)
     smooth = 1.0
-    target = target * (weight * is_hand.reshape(-1, 1, 1, 1) + 1)
+    target = target #* (weight * is_hand.reshape(-1, 1, 1, 1) + 1)
     iflat = pred.view(-1)
     tflat = target.view(-1) 
     
@@ -33,7 +33,7 @@ class FocalLoss(nn.Module):
             ((-max_val).exp() + (-pred - max_val).exp()).log()
         invprobs = F.logsigmoid(-pred * (target * 2.0 - 1.0))
         
-        loss = (invprobs * self.gamma).exp() * loss * (self.weight * is_hand.reshape(-1, 1, 1, 1) + 1)
+        loss = (invprobs * self.gamma).exp() * loss #* (self.weight * is_hand.reshape(-1, 1, 1, 1) + 1)
         return loss.mean()
 
 

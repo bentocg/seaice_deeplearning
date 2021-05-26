@@ -23,6 +23,8 @@ def parse_args():
     parser.add_argument('--random_seed', '-r', type=int, default=42, help='random seed for reproducibility')
     parser.add_argument('--device_id', '-d', type=int, default=0, help='device id for cuda GPU')
     parser.add_argument('--autoresume', '-a', type=int, default=1, help='whether to autoresume training from last epoch')
+    parser.add_argument('--tsets', '-z', type=str, default='hand', help='which training sets are used for training')
+    parser.add_argument('--augmentation_mode', '-g', type=str, default='simple', help='what kind of data augmentation to be used during training' )
     return parser.parse_args()
 
 
@@ -63,7 +65,7 @@ def main():
             model.load_state_dict(model_dict)
 
         model_name = f"UnetResnet34_{args.patch_size}_{args.learning_rate}_{args.batch_size}_" \
-                     f"{'finetuned' if args.finetune else 'scratch'}"
+                     f"{'finetuned' if args.finetune else 'scratch'}_tsets_{args.tsets}"
 
     else:
         model = resnet34(num_classes=1)
@@ -80,11 +82,12 @@ def main():
         state_dict = checkpoint
 
     # start training
+    tsets = tuple(args.tsets.split('_'))
     model_trainer = Trainer(model, device=device, patch_size=args.patch_size,
                             batch_size=(args.batch_size, args.batch_size * 2), epochs=args.epochs,
                             data_folder=args.training_set, lr=args.learning_rate,
                             model_name=model_name, segmentation=args.segmentation,
-                            state_dict=state_dict, tsets=tuple(['synthetic', 'hand']))
+                            state_dict=state_dict, tsets=tsets)
     model_trainer.start()
 
 

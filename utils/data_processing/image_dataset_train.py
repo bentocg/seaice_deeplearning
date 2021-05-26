@@ -6,12 +6,13 @@ from utils.data_processing import get_transforms
 
 
 class SeaIceDataset(Dataset):
-    def __init__(self, df, data_folder, tsets=('hand'), size=256, phase='training', segmentation=False):
+    def __init__(self, df, data_folder, tsets=('hand'), size=256, phase='training', segmentation=False,
+                 augmentation_mode='simple'):
 
         # read dataframe with filenames and associated labels
         self.ds = df
         self.root = data_folder
-        self.transforms = get_transforms(phase, size)
+        self.transforms = get_transforms(phase, size, augmentation_mode)
         self.segmentation = segmentation
         self.size = size
 
@@ -50,7 +51,7 @@ class SeaIceDataset(Dataset):
             if mask_path:
                 mask = np.array(Image.open(mask_path))
             else:
-                mask = np.zeros([self.size, self.size, 1])
+                mask = np.zeros([img.shape[0], img.shape[1], 1])
 
         if self.transforms is not None:
             if self.segmentation:
