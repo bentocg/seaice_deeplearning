@@ -69,7 +69,7 @@ def metric(probability, truth, threshold=0.5):
         num_neg = len(neg_index)
         num_pos = len(pos_index)
 
-    return dice, dice_neg, dice_pos, num_neg, num_pos
+    return dice.numpy(), dice_neg.numpy(), dice_pos.numpy(), num_neg, num_pos
 
 
 class Meter:
