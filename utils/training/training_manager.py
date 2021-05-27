@@ -124,6 +124,7 @@ class Trainer(object):
             loss, outputs = self.forward(images, targets, is_hand)
             if phase == "training":
                 loss.backward()
+                torch.nn.utils.clip_grad_norm(self.net.parameters(), 1.0)
                 self.optimizer.step()
                 self.optimizer.zero_grad()
             if self.global_step % 10 == 0:
