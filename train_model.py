@@ -65,7 +65,7 @@ def main():
             model.load_state_dict(model_dict)
 
         model_name = f"UnetResnet34_{args.patch_size}_{args.learning_rate}_{args.batch_size}_" \
-                     f"{'finetuned' if args.finetune else 'scratch'}_tsets_{args.tsets}"
+                     f"{'finetuned' if args.finetune else 'scratch'}_tsets_{args.tsets}_hyp_{args.augmentation_mode}"
 
     else:
         model = resnet34(num_classes=1)
