@@ -37,6 +37,7 @@ class Trainer(object):
         self.global_step = 0
         if torch.cuda.is_available():
             torch.set_default_tensor_type("torch.cuda.FloatTensor")
+            torch.multiprocessing.set_start_method('spawn')
         self.net = model
         if self.segmentation:
             self.criterion = MixedLoss(10.0, 2.0, self.is_hand_weight)
