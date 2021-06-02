@@ -1,25 +1,34 @@
-from sklearn.model_selection import StratifiedKFold
-from torch.utils.data import DataLoader, sampler
+from torch.utils.data import DataLoader, WeightedRandomSampler
 import pandas as pd
 from utils.data_processing import SeaIceDataset
-from .balanced_batch_sampler import BalancedBatchSampler
+import torch
+import numpy as np
 
 
-def provider(df_path, data_folder, phase, size, tsets, batch_size=8, num_workers=8,
-             segmentation=False, augmentation_mode='simple'):
+def provider(df_path, data_folder, phase, size, tsets, batch_size=8, num_workers=4,
+             segmentation=False, augmentation_mode='simple', neg_to_pos_ratio=1):
     df = pd.read_csv(df_path)
     
     image_dataset = SeaIceDataset(df=df, data_folder=data_folder, phase=phase, tsets=tsets, 
                                   size=size, segmentation=segmentation, 
                                   augmentation_mode=augmentation_mode)
+    
+    num_pos = sum(image_dataset.ds.has_mask)
+    num_neg = len(image_dataset) - num_pos
+    total_prob_neg = neg_to_pos_ratio / (neg_to_pos_ratio + 1)
+    prob_neg = total_prob_neg / num_neg
+    prob_pos = (1 - total_prob_neg) / num_pos
+    weights = torch.Tensor([prob_pos if ele else prob_neg for ele in image_dataset.ds.has_mask])
+    sampler = WeightedRandomSampler(weights=weights,
+                                    num_samples=len(weights),
+                                    replacement=True)
     if phase == 'train':
         dataloader = DataLoader(
-            image_dataset,
-            batch_size=batch_size,
+            image_dataset,           
             num_workers=num_workers,
-            pin_memory=False,
-            sampler=BalancedBatchSampler(image_dataset, image_dataset.bin_labels),
-            drop_last=True
+            sampler=sampler,
+            batch_size=batch_size,
+            pin_memory=False
         )
 
     else:

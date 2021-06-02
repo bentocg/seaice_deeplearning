@@ -23,7 +23,7 @@ class SeaIceDataset(Dataset):
 
         # get labels and img names
         self.long_labels = self.ds.label.values
-        self.bin_labels = self.ds['pack_ice'].values
+        self.bin_labels = self.ds['pack_ice'].values.astype(np.uint8)
         self.img_names = [f'{self.root}/{self.ds.training_set.iloc[idx]}/{phase}/x/{file}' for idx, file in enumerate(self.ds.img_name.values)]
 
         # get which labels come from the hand-annotated set
@@ -49,9 +49,9 @@ class SeaIceDataset(Dataset):
         if self.segmentation:
             mask_path = self.mask_names[idx]
             if mask_path:
-                mask = np.array(Image.open(mask_path))
+                mask = np.array(Image.open(mask_path), dtype=np.uint8)
             else:
-                mask = np.zeros([img.shape[0], img.shape[1], 1])
+                mask = np.zeros([img.shape[0], img.shape[1], 1], dtype=np.uint8)
 
         if self.transforms is not None:
             if self.segmentation:
@@ -69,9 +69,9 @@ class SeaIceDataset(Dataset):
 
                     img = np.array(Image.open(img_path))
                     if mask_path:
-                        mask = np.array(Image.open(mask_path))
+                        mask = np.array(Image.open(mask_path), dtype=np.uint8)
                     else:
-                        mask = np.zeros([self.size, self.size, 1])
+                        mask = np.zeros([self.size, self.size, 1], dtype=np.uint8)
                     augmented = self.transforms(image=img, mask=mask)
 
                     img = augmented['image']

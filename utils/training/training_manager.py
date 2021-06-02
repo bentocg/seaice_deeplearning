@@ -20,14 +20,15 @@ class Trainer(object):
 
     def __init__(self, model, model_name, device="cuda:0", batch_size=(64, 128), patch_size=256, epochs=20,
                  lr=1e-3, patience=3, tsets=('hand'), data_folder='training_set_synthetic', segmentation=True,
-                 state_dict=None, is_hand_weight=2.0):
+                 state_dict=None, is_hand_weight=2.0, neg_to_pos_ratio=1.0, num_workers=4.0):
         self.is_hand_weight = is_hand_weight
-        self.num_workers = 0
+        self.num_workers = num_workers
         self.batch_size = {'training': batch_size[0], 'validation': batch_size[1]}
         self.lr = lr
         self.num_epochs = epochs
         self.start_epoch = 0
         self.best_iou = 0.0
+        self.neg_to_pos_ratio = neg_to_pos_ratio
         self.best_dice = 0.0
         self.phases = ["training", "validation"]
         self.device = device
@@ -72,6 +73,7 @@ class Trainer(object):
                 size=patch_size,
                 batch_size=self.batch_size[phase],
                 num_workers=self.num_workers,
+                neg_to_pos_ratio=neg_to_pos_ratio,
             )
             for phase in self.phases
         }
@@ -197,7 +199,7 @@ class Trainer(object):
                 torch.save(self.state, f"checkpoints/{self.model_name}_dice-{self.best_dice}"
                                        f"_iou-{self.best_iou}_epoch-{epoch}.pth")
             print()
-            if since == 5:
+            if since == 6:
                 print(f'Did not improve for {since} epochs, early stopping triggered')
                 quit()
         quit()
