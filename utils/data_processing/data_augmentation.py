@@ -62,9 +62,18 @@ def val_transform(size):
         ]
     )
 
+def test_transform():
+    return A.Compose(
+        [
+            A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+            ToTensorV2()
+        ]
+    )
 
-def get_transforms(phase, size, mode):
+def get_transforms(phase, size=256, mode='simple'):
     if phase == 'training':
         return train_transform(size, mode)
+    elif phase == 'test':
+        return test_transform()
     else:
         return val_transform(size)

@@ -1,5 +1,5 @@
 from utils.training import Meter, epoch_log
-from utils.loss_functions import MixedLoss, FocalLoss
+from utils.loss_functions import MixedLoss, DiceLoss, FocalLoss
 from utils.data_processing import provider
 from torch.utils.tensorboard import SummaryWriter
 
@@ -20,8 +20,7 @@ class Trainer(object):
 
     def __init__(self, model, model_name, device="cuda:0", batch_size=(64, 128), patch_size=256, epochs=20,
                  lr=1e-3, patience=3, tsets=('hand'), data_folder='training_set_synthetic', segmentation=True,
-                 state_dict=None, is_hand_weight=2.0, neg_to_pos_ratio=1.0, num_workers=4.0):
-        self.is_hand_weight = is_hand_weight
+                 state_dict=None, neg_to_pos_ratio=1.0, num_workers=4.0, loss='BCE'):
         self.num_workers = num_workers
         self.batch_size = {'training': batch_size[0], 'validation': batch_size[1]}
         self.lr = lr
@@ -39,10 +38,18 @@ class Trainer(object):
             torch.set_default_tensor_type("torch.cuda.FloatTensor")
             torch.multiprocessing.set_start_method('spawn')
         self.net = model
-        if self.segmentation:
-            self.criterion = MixedLoss(10.0, 2.0, self.is_hand_weight)
-        else:
-            self.criterion = FocalLoss(2.0, self.is_hand_weight)
+
+        if loss == 'BCE':
+            self.criterion = torch.nn.BCEWithLogitsLoss()
+        elif loss == 'DICE':
+            self.criterion = DiceLoss()
+        elif loss == 'Focal':
+            self.criterion = FocalLoss()
+        elif loss == 'Mixed':
+            self.criterion = MixedLoss()
+        else: 
+            raise ValueError(f"Loss function {loss} is not currently supported")
+
         self.optimizer = optim.AdamW(self.net.parameters(), lr=self.lr)
         if state_dict:
             self.start_epoch = state_dict['epoch'] + 1
@@ -87,11 +94,11 @@ class Trainer(object):
             std=[1 / 0.229, 1 / 0.224, 1 / 0.255]
         )
 
-    def forward(self, images, targets, is_hand):
+    def forward(self, images, targets):
         images = images.to(self.device)
         targets = targets.to(self.device)
         outputs = self.net(images)
-        loss = self.criterion(outputs, targets, is_hand)
+        loss = self.criterion(outputs, targets)
         return loss, outputs
 
     @staticmethod
@@ -123,8 +130,8 @@ class Trainer(object):
         self.optimizer.zero_grad()
         for itr, batch in enumerate(dataloader):
             print('.', end='')
-            images, is_hand, targets = batch[0], batch[1], batch[-1]
-            loss, outputs = self.forward(images, targets, is_hand)
+            images, _, targets = batch[0], batch[1], batch[-1]
+            loss, outputs = self.forward(images, targets)
             if phase == "training":
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.net.parameters(), 1.0)

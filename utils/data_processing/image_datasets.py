@@ -1,7 +1,10 @@
+__all__ = ['SeaIceDataset', 'TestDataset']
+
 from torch.utils.data import Dataset
 from PIL import Image
 import numpy as np
 import torch
+import os
 from utils.data_processing import get_transforms
 
 
@@ -96,3 +99,28 @@ class SeaIceDataset(Dataset):
 
         else:
             return img, is_hand, label
+
+
+class TestDataset(Dataset):
+    def __init__(self, data_folder):
+
+       self.img_names = [f'{data_folder}/{ele}' for ele in os.listdir(data_folder)]
+       self.transforms = get_transforms(phase='test')
+    
+    def __len__(self):
+        return len(self.img_names)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        # read img and apply transforms
+        img_name = self.img_names[idx]
+        img = np.array(Image.open(img_name))
+        try:
+            img = self.transforms(image=img)['image']
+        except:
+            print('failed')
+            print(img_name)
+            idx -= 5
+        return img, img_name

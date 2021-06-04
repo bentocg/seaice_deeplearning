@@ -1,1 +1,1 @@
-from .mixed_loss import MixedLoss, FocalLoss, dice_loss
+from .mixed_loss import MixedLoss, FocalLoss, dice_loss, DiceLoss

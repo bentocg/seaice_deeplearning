@@ -27,6 +27,7 @@ def parse_args():
     parser.add_argument('--augmentation_mode', '-g', type=str, default='simple', help='what kind of data augmentation to be used during training' )
     parser.add_argument('--neg_to_pos_ratio', '-n', type=float, default=1.0, help='number of negative samples for every positive sample in minibatches')
     parser.add_argument('--num_workers', '-w', type=int, default=4, help='number of workers for dataloader')
+    parser.add_argument('--criterion', '-c', type=str, default='BCE', help='loss function for training')
     return parser.parse_args()
 
 
@@ -68,13 +69,13 @@ def main():
 
         model_name = f"UnetResnet34_{args.patch_size}_{args.learning_rate}_{args.batch_size}_" \
                      f"{'finetuned' if args.finetune else 'scratch'}_tsets_{args.tsets}_" \
-                     f"aug_{args.augmentation_mode}_ratio_{args.neg_to_pos_ratio}"
+                     f"aug_{args.augmentation_mode}_ratio_{args.neg_to_pos_ratio}_loss_{args.criterion}"
 
     else:
         model = resnet34(num_classes=1)
         model_name = f"Resnet34_{args.patch_size}_{args.learning_rate}_{args.batch_size}" \
                      f"_tsets_{args.tsets}_" \
-                     f"aug_{args.augmentation_mode}_ratio_{args.neg_to_pos_ratio}"
+                     f"aug_{args.augmentation_mode}_ratio_{args.neg_to_pos_ratio}_loss_{args.criterion}"
 
     # see if a checkpoint for this model already exists, load weights if it does
     checkpoint = f"checkpoints/{model_name}_last.pth"
@@ -93,7 +94,7 @@ def main():
                             data_folder=args.training_set, lr=args.learning_rate,
                             model_name=model_name, segmentation=args.segmentation,
                             state_dict=state_dict, tsets=tsets, neg_to_pos_ratio=args.neg_to_pos_ratio,
-                            num_workers=args.num_workers)
+                            num_workers=args.num_workers, loss=args.criterion)
     model_trainer.start()
 
 

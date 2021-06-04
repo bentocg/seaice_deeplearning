@@ -127,3 +127,11 @@ def seed_all(seed: int):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.enabled = False
+
+
+
+def dice_cpu(gt_mask, pred_mask):
+    pass
+
+def iou_cpu(gt_mask, pred_mask):
+    pass
