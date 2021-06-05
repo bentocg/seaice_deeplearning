@@ -62,4 +62,4 @@ class MixedLoss(nn.Module):
 
     def forward(self, pred, target):
         loss = self.alpha*self.focal(pred, target) + dice_loss(pred, target)
-        return loss.mean()
+        return loss

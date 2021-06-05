@@ -28,6 +28,7 @@ def parse_args():
     parser.add_argument('--neg_to_pos_ratio', '-n', type=float, default=1.0, help='number of negative samples for every positive sample in minibatches')
     parser.add_argument('--num_workers', '-w', type=int, default=4, help='number of workers for dataloader')
     parser.add_argument('--criterion', '-c', type=str, default='BCE', help='loss function for training')
+    parser.add_argument('--save_output', '-u', type=int, default=0, help='switch to store output to tensorboard')
     return parser.parse_args()
 
 
@@ -94,7 +95,7 @@ def main():
                             data_folder=args.training_set, lr=args.learning_rate,
                             model_name=model_name, segmentation=args.segmentation,
                             state_dict=state_dict, tsets=tsets, neg_to_pos_ratio=args.neg_to_pos_ratio,
-                            num_workers=args.num_workers, loss=args.criterion)
+                            num_workers=args.num_workers, loss=args.criterion, save_output=args.save_output)
     model_trainer.start()
 
 

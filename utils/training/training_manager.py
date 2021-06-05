@@ -20,7 +20,7 @@ class Trainer(object):
 
     def __init__(self, model, model_name, device="cuda:0", batch_size=(64, 128), patch_size=256, epochs=20,
                  lr=1e-3, patience=3, tsets=('hand'), data_folder='training_set_synthetic', segmentation=True,
-                 state_dict=None, neg_to_pos_ratio=1.0, num_workers=4.0, loss='BCE'):
+                 state_dict=None, neg_to_pos_ratio=1.0, num_workers=4.0, loss='BCE', save_output=False):
         self.num_workers = num_workers
         self.batch_size = {'training': batch_size[0], 'validation': batch_size[1]}
         self.lr = lr
@@ -33,6 +33,7 @@ class Trainer(object):
         self.device = device
         self.segmentation = segmentation
         self.model_name = model_name
+        self.save_output = save_output
         self.global_step = 0
         if torch.cuda.is_available():
             torch.set_default_tensor_type("torch.cuda.FloatTensor")
@@ -129,7 +130,6 @@ class Trainer(object):
         total_batches = len(dataloader)
         self.optimizer.zero_grad()
         for itr, batch in enumerate(dataloader):
-            print('.', end='')
             images, _, targets = batch[0], batch[1], batch[-1]
             loss, outputs = self.forward(images, targets)
             if phase == "training":
@@ -142,6 +142,33 @@ class Trainer(object):
             running_loss += loss.item()
             meter.update(targets, outputs)
             self.global_step += 1
+     
+            if self.global_step % 100 == 0 and self.save_output:
+                p = torch.tensor([1 / len(images)] * len(images))
+                idcs = p.multinomial(min(6, len(images)))
+                images = self.inv_normalize(images)[idcs].detach()
+                outputs = torch.sigmoid(outputs[idcs])
+                outputs = (outputs > 0.5).detach().float()
+                targets = targets[idcs]
+                images = torch.clamp(images, 0, 1)
+
+                if self.segmentation:
+                    targets *= 255
+                    outputs = outputs.cpu()
+                    grid = torchvision.utils.make_grid(torch.vstack([images,
+                                                                    targets.repeat(1, 3, 1, 1),
+                                                                    outputs.repeat(1, 3, 1, 1)]),
+                                                    nrow=6, value_range=(0, 255),
+                                                    scale_each=True)
+                    grid = torch.unsqueeze(grid, 0)
+                    self.writer.add_images(f'input_images/{phase}', grid, epoch)
+
+                else:
+                    self.writer.add_images(f'labelled_images/{phase}', self.put_text(
+                        images.detach().float(),
+                        targets.detach().float(),
+                        outputs), epoch)
+
         epoch_loss = running_loss / (total_batches * batch_size)
         dice, iou = epoch_log(epoch_loss, meter)
         self.losses[phase].append(epoch_loss)
@@ -150,30 +177,7 @@ class Trainer(object):
         self.writer.add_scalar(f'Dice/{phase}', dice, epoch)
         self.writer.add_scalar(f'IoU/{phase}', iou, epoch)
         self.writer.add_scalar('learning rate', epoch)
-        p = torch.tensor([1 / len(images)] * len(images))
-        idcs = p.multinomial(min(6, len(images)))
-        images = self.inv_normalize(images)[idcs]
-        outputs = torch.sigmoid(outputs[idcs])
-        outputs = (outputs > 0.5).detach().float()
-        targets = targets[idcs]
-        images = torch.clamp(images, 0, 1)
-
-        if self.segmentation:
-            targets *= 255
-            outputs = outputs.cpu()
-            grid = torchvision.utils.make_grid(torch.vstack([images,
-                                                             targets.repeat(1, 3, 1, 1),
-                                                             outputs.repeat(1, 3, 1, 1)]),
-                                               nrow=6, value_range=(0, 255),
-                                               scale_each=True)
-            grid = torch.unsqueeze(grid, 0)
-            self.writer.add_images(f'input_images/{phase}', grid, epoch)
-
-        else:
-            self.writer.add_images(f'labelled_images/{phase}', self.put_text(
-                images.detach().float(),
-                targets.detach().float(),
-                outputs), epoch)
+       
 
         torch.cuda.empty_cache()
         self.state['epoch'] = epoch
