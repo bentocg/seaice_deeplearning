@@ -131,6 +131,7 @@ class Trainer(object):
         self.optimizer.zero_grad()
         for itr, batch in enumerate(dataloader):
             images, _, targets = batch[0], batch[1], batch[-1]
+            targets = targets.type_as(images)
             loss, outputs = self.forward(images, targets)
             if phase == "training":
                 loss.backward()
