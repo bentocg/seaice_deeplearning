@@ -5,6 +5,8 @@ import torch
 import os
 import random
 
+from torch._C import NoneType
+
 
 def predict(X, threshold):
     X_p = np.copy(X)
@@ -24,20 +26,20 @@ def compute_ious(pred, label, classes, only_present=True):
             ious.append(np.nan)
             continue
         pred_c = pred == c
-        intersection = np.logical_and(pred_c, label_c).sum()
-        union = np.logical_or(pred_c, label_c).sum()
+        intersection = (pred_c * label_c).sum()
+        union = (pred_c + label_c).sum()
         if union != 0:
             ious.append(intersection / union)
     return ious if ious else [1]
 
 
-def compute_iou_batch(outputs, labels, classes=None, segmentation=False):
+def compute_iou_batch(outputs, labels, classes=None):
     '''computes mean iou for a batch of ground truth masks and predicted masks'''
     ious = []
     preds = np.copy(outputs)
     labels = np.array(labels)
     for pred, label in zip(preds, labels):
-        ious.append(np.nanmean(compute_ious(pred, label, classes, segmentation)))
+        ious.append(np.nanmean(compute_ious(pred, label, classes)))
     iou = np.nanmean(ious)
     return iou
 
@@ -91,7 +93,7 @@ class Meter:
         self.dice_pos_scores.extend(dice_pos)
         self.dice_neg_scores.extend(dice_neg)
         preds = predict(probs, self.base_threshold)
-        iou = compute_iou_batch(preds, targets, classes=[1], segmentation=self.segmentation)
+        iou = compute_iou_batch(preds, targets, classes=[1])
         self.iou_scores.append(iou)
 
     def get_metrics(self):
