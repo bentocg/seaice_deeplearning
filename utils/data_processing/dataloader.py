@@ -10,7 +10,6 @@ import numpy as np
 def provider(df_path, data_folder, phase, size, tsets, batch_size=8, num_workers=4,
              segmentation=False, augmentation_mode='simple', neg_to_pos_ratio=1):
     df = pd.read_csv(df_path)
-    df = df.drop_duplicates(subset='img_name')
     
     image_dataset = SeaIceDataset(df=df, data_folder=data_folder, phase=phase, tsets=tsets, 
                                   size=size, segmentation=segmentation, 

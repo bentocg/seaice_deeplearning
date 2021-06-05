@@ -23,6 +23,8 @@ class SeaIceDataset(Dataset):
         self.ds = self.ds.loc[self.ds.split == phase]
         if phase == 'training':
             self.ds = self.ds.loc[self.ds.training_set.isin(tsets)]
+            self.ds = self.ds.drop_duplicates(subset='img_name')
+
 
         # get labels and img names
         self.long_labels = self.ds.label.values
