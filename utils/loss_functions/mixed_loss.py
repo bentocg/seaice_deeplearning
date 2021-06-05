@@ -38,10 +38,9 @@ class DiceLoss(nn.Module):
 
 
 class FocalLoss(nn.Module):
-    def __init__(self, gamma, weight):
+    def __init__(self, gamma=2.0):
         super().__init__()
         self.gamma = gamma
-        self.weight = weight
 
     def forward(self, pred, target):
         if len(target.shape) == 1:
@@ -59,10 +58,10 @@ class FocalLoss(nn.Module):
 
 
 class MixedLoss(nn.Module):
-    def __init__(self, alpha=10.0, gamma=2.0, weight=3.0):
+    def __init__(self, alpha=10.0, gamma=2.0):
         super().__init__()
         self.alpha = alpha
-        self.focal = FocalLoss(gamma, weight)
+        self.focal = FocalLoss(gamma)
         self.weight = weight
 
     def forward(self, pred, target):
