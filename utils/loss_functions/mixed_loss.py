@@ -62,7 +62,6 @@ class MixedLoss(nn.Module):
         super().__init__()
         self.alpha = alpha
         self.focal = FocalLoss(gamma)
-        self.weight = weight
 
     def forward(self, pred, target):
         loss = self.alpha*self.focal(pred, target) + dice_loss(pred, target)
