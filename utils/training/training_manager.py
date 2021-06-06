@@ -20,7 +20,8 @@ class Trainer(object):
 
     def __init__(self, model, model_name, device="cuda:0", batch_size=(64, 128), patch_size=256, epochs=20,
                  lr=1e-3, patience=3, tsets=('hand'), data_folder='training_set_synthetic', segmentation=True,
-                 state_dict=None, neg_to_pos_ratio=1.0, num_workers=4.0, loss='BCE', save_output=False):
+                 state_dict=None, neg_to_pos_ratio=1.0, num_workers=4.0, loss='BCE', save_output=False,
+                 augmentation_mode='simple'):
         self.num_workers = num_workers
         self.batch_size = {'training': batch_size[0], 'validation': batch_size[1]}
         self.lr = lr
@@ -83,6 +84,7 @@ class Trainer(object):
                 batch_size=self.batch_size[phase],
                 num_workers=self.num_workers,
                 neg_to_pos_ratio=neg_to_pos_ratio,
+                augmentation_mode=augmentation_mode
             )
             for phase in self.phases
         }
