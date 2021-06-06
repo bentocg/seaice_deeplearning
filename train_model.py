@@ -95,7 +95,7 @@ def main():
                             data_folder=args.training_set, lr=args.learning_rate,
                             model_name=model_name, segmentation=args.segmentation,
                             state_dict=state_dict, tsets=tsets, neg_to_pos_ratio=args.neg_to_pos_ratio,
-                            augmentaion_mode=args.augmentation_mode,
+                            augmentation_mode=args.augmentation_mode,
                             num_workers=args.num_workers, loss=args.criterion, save_output=args.save_output)
     model_trainer.start()
 
