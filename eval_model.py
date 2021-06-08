@@ -10,6 +10,7 @@ import os
 import re
 import cv2
 import pandas as pd
+from shutil import rmtree
 
 
 def parse_args():
@@ -24,6 +25,7 @@ def parse_args():
     parser.add_argument('--tta', '-t', type=bool, default=0, help='toggle for test-time augmentation')
     parser.add_argument('--output_folder','-o', type=str,  default='test_output', help='output folder for test predictions')
     parser.add_argument('--threshold', '-x', type=float, default=0.5, help='threshold for output binarization')
+    parser.add_argument('--save_output', '-u', type=bool, default=1, help='whether to save the output')
     
     return parser.parse_args()
 
@@ -113,11 +115,17 @@ def main():
                 preds = torch.sigmoid(model(tiles))
                 preds = (preds.detach() > args.threshold).float()
                 write_output(preds, img_names, out_dir)
+        
+        
 
         # merge predictions
 
         # get IoU and DICE
 
+        # erase temp tiles
+        if not args.save_output:
+            rmtree(f"{args.output_folder}/{os.path.basename(ele)}/temp_tiles")
+            rmtree(f"{args.output_folder}/{os.path.basename(ele)}/pred_tiles")
 
 
 if __name__ == '__main__':

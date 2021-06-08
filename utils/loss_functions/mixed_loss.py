@@ -1,27 +1,16 @@
-__all__ = ['dice_loss', 'FocalLoss', 'MixedLoss']
+__all__ = ['DiceLoss', 'FocalLoss', 'MixedLoss', 'LogCoshLoss', 'DicePerimeterLoss']
 
 import torch
 from torch import nn
 from torch.nn import functional as F
 
 
-
-def dice_loss(pred, target):
-    pred = torch.sigmoid(pred)
-    smooth = 1.0
-    iflat = pred.view(-1)
-    tflat = target.view(-1) 
-    
-    intersection = (iflat * tflat).sum()
-    dice_loss = (2.0 * intersection + smooth) / (iflat.sum() + tflat.sum() + smooth)
-    return 1 - dice_loss
-
-
 class DiceLoss(nn.Module):
-    def __init__(self):
+    def __init__(self, merge='mean'):
         super().__init__()
         self.smooth=1
-        self.p=2
+        self.p=1
+        self.merge=merge
 
     def forward(self, pred, target):
         pred = torch.sigmoid(pred)
@@ -32,15 +21,19 @@ class DiceLoss(nn.Module):
         den = torch.sum(pred.pow(self.p) + target.pow(self.p), dim=1) + self.smooth
 
         loss = 1 - num / den
-        return loss.mean()
-
-
+        if self.merge == 'sum':
+            return loss.sum()
+        elif self.merge == 'mean':
+            return loss.mean()
+        else:
+            raise Exception('Merging mode not implemented')
 
 
 class FocalLoss(nn.Module):
-    def __init__(self, gamma=2.0):
+    def __init__(self, gamma=2.0, merge='mean'):
         super().__init__()
         self.gamma = gamma
+        self.merge = merge
 
     def forward(self, pred, target):
         if len(target.shape) == 1:
@@ -54,7 +47,12 @@ class FocalLoss(nn.Module):
         invprobs = F.logsigmoid(-pred * (target * 2.0 - 1.0))
         
         loss = (invprobs * self.gamma).exp() * loss 
-        return loss.sum()
+        if self.merge == 'sum':
+            return loss.sum()
+        elif self.merge == 'mean':
+            return loss.mean()
+        else:
+            raise Exception('Merging mode not implemented')
 
 
 class MixedLoss(nn.Module):
@@ -62,7 +60,39 @@ class MixedLoss(nn.Module):
         super().__init__()
         self.alpha = alpha
         self.focal = FocalLoss(gamma)
+        self.dice = DiceLoss()
 
     def forward(self, pred, target):
-        loss = self.alpha*self.focal(pred, target) + dice_loss(pred, target)
+        loss = self.alpha*self.focal(pred, target) + self.dice(pred, target)
         return loss
+
+
+class LogCoshLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.dice = DiceLoss()
+    
+    def forward(self, pred, target):
+        loss = torch.log(torch.cosh(self.dice(pred, target)))
+        return loss
+
+
+class DicePerimeterLoss(nn.Module):
+    def __init__(self, alpha=0.2):
+        super().__init__()
+        self.dice = DiceLoss()
+        self.mse = nn.MSELoss()
+        self.alpha = alpha
+
+    def _contour(self, mask):
+        min_pool = -F.max_pool2d(-mask, (3, 3), 1, 1)
+        max_pool = F.max_pool2d(mask, (3, 3), 1, 1)
+        contour = F.relu(min_pool - max_pool)
+        return contour
+    
+    def forward(self, pred, target):
+        cont_pred = self._contour(pred)
+        cont_target = self._contour(target)
+        perim_loss = self.mse(cont_pred, cont_target)
+        dice_loss = self.dice(pred, target)
+        return (1 - self.alpha) * dice_loss + self.alpha * perim_loss

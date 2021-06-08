@@ -1,5 +1,6 @@
+from utils.loss_functions.mixed_loss import DicePerimeterLoss, LogCoshLoss
 from utils.training import Meter, epoch_log
-from utils.loss_functions import MixedLoss, DiceLoss, FocalLoss
+from utils.loss_functions import MixedLoss, DiceLoss, FocalLoss, LogCoshLoss, DicePerimeterLoss
 from utils.data_processing import provider
 from torch.utils.tensorboard import SummaryWriter
 
@@ -30,7 +31,7 @@ class Trainer(object):
         self.best_iou = 0.0
         self.neg_to_pos_ratio = neg_to_pos_ratio
         self.best_dice = 0.0
-        self.phases = ["training", "validation"]
+        self.phases = ["training", f"validation"]
         self.device = device
         self.segmentation = segmentation
         self.model_name = model_name
@@ -49,6 +50,10 @@ class Trainer(object):
             self.criterion = FocalLoss()
         elif loss == 'Mixed':
             self.criterion = MixedLoss()
+        elif loss == 'DicePerimeter':
+            self.criterion = DicePerimeterLoss()
+        elif loss == 'LogCosh':
+            self.criterion = LogCoshLoss()
         else: 
             raise ValueError(f"Loss function {loss} is not currently supported")
 
@@ -70,11 +75,11 @@ class Trainer(object):
                 "state_dict": self.net.state_dict(),
                 "optimizer": self.optimizer.state_dict()
             }
-        self.scheduler = ReduceLROnPlateau(self.optimizer, mode="max", patience=patience, verbose=True)
+        self.scheduler = ReduceLROnPlateau(self.optimizer, mode="max", patience=patience, verbose=True, factor=0.5)
         self.net = self.net.to(self.device)
         cudnn.benchmark = True
         self.dataloaders = {
-            phase: provider(
+            phase: provider( 
                 segmentation=self.segmentation,
                 tsets=tsets,
                 data_folder=data_folder,
@@ -129,6 +134,8 @@ class Trainer(object):
         self.net.train(phase == "training")
         dataloader = self.dataloaders[phase]
         running_loss = 0.0
+        total_pos = 0.0
+        total = 0.0
         total_batches = len(dataloader)
         self.optimizer.zero_grad()
         for itr, batch in enumerate(dataloader):
@@ -142,7 +149,11 @@ class Trainer(object):
                 self.optimizer.zero_grad()
             if self.global_step % 10 == 0:
                 self.writer.add_scalar(f'Loss/{phase}', loss.item(), self.global_step)
+                self.writer.add_scalar(f'num_pos/{phase}', total_pos, self.global_step)
+                self.writer.add_scalar(f'total/{phase}', total, self.global_step)
             running_loss += loss.item()
+            total_pos += targets.sum().item()
+            total += len(targets)
             meter.update(targets, outputs)
             self.global_step += 1
      
@@ -154,6 +165,7 @@ class Trainer(object):
                 outputs = (outputs > 0.5).detach().float()
                 targets = targets[idcs]
                 images = torch.clamp(images, 0, 1)
+             
 
                 if self.segmentation:
                     targets *= 255
@@ -171,7 +183,7 @@ class Trainer(object):
                         images.detach().float(),
                         targets.detach().float(),
                         outputs), epoch)
-
+        
         epoch_loss = running_loss / (total_batches * batch_size)
         dice, iou = epoch_log(epoch_loss, meter)
         self.losses[phase].append(epoch_loss)

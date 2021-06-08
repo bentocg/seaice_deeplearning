@@ -18,21 +18,27 @@ class SeaIceDataset(Dataset):
         self.transforms = get_transforms(phase, size, augmentation_mode)
         self.segmentation = segmentation
         self.size = size
+        self.split = phase
+        if phase == 'validation':
+            self.split = f'{phase}{size}'
+
 
         # subset to training sets of interest
-        self.ds = self.ds.loc[self.ds.split == phase]
+        self.ds = self.ds.loc[self.ds.split == self.split]
         if phase == 'training':
             self.ds = self.ds.loc[self.ds.training_set.isin(tsets)]
             self.ds = self.ds.drop_duplicates(subset='img_name')
 
-
+   
         # get labels and img names
         self.long_labels = self.ds.label.values
         self.bin_labels = self.ds['pack_ice'].values.astype(np.uint8)
-        self.img_names = [f'{self.root}/{self.ds.training_set.iloc[idx]}/{phase}/x/{file}' for idx, file in enumerate(self.ds.img_name.values)]
+        self.img_names = [f'{self.root}/{self.ds.training_set.iloc[idx]}/{self.split}/x/{file}' for idx, file in enumerate(self.ds.img_name.values)]
 
         # get which labels come from the hand-annotated set
         self.is_hand = [int(ele == 'hand') for ele in self.ds.training_set]
+
+       
 
         if self.segmentation:
             self.ds = self.ds.loc[(self.ds.has_mask == 1) | (self.ds.pack_ice == 0)]
