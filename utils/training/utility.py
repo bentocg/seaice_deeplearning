@@ -27,7 +27,7 @@ def compute_ious(pred, label, classes, only_present=True):
             continue
         pred_c = pred == c
         intersection = (pred_c * label_c).sum()
-        union = (pred_c + label_c).sum()
+        union = np.logical_or(pred_c, label_c).sum()
         if union != 0:
             ious.append(intersection / union)
     return ious if ious else [1]
