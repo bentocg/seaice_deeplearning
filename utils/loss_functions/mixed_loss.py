@@ -17,7 +17,7 @@ class DiceLoss(nn.Module):
         pred = pred.contiguous().view(pred.shape[0], -1)
         target = target.contiguous().view(target.shape[0], -1)
 
-        num = torch.sum(torch.mul(pred, target), dim=1) + self.smooth
+        num = 2 * torch.sum(torch.mul(pred, target), dim=1) + self.smooth
         den = torch.sum(pred.pow(self.p) + target.pow(self.p), dim=1) + self.smooth
 
         loss = 1 - num / den
