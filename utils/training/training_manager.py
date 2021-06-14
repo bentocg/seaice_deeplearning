@@ -11,6 +11,7 @@ from torchvision import transforms
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch.backends.cudnn as cudnn
 import time
+import copy
 import os
 import numpy as np
 import cv2
@@ -72,8 +73,8 @@ class Trainer(object):
                 "global_step": 0,
                 "best_dice": 0,
                 "best_iou": 0,
-                "state_dict": self.net.state_dict(),
-                "optimizer": self.optimizer.state_dict()
+                "state_dict": copy.deepcopy(self.net.state_dict()),
+                "optimizer": copy.deepcopy(self.optimizer.state_dict())
             }
         self.scheduler = ReduceLROnPlateau(self.optimizer, mode="max", patience=patience, verbose=True, factor=0.5)
         self.net = self.net.to(self.device)
@@ -223,10 +224,14 @@ class Trainer(object):
                 print("******** New optimal found, saving state ********")
                 self.state["best_dice"] = self.best_dice = val_dice
                 self.state["best_iou"] = self.best_iou = val_iou
+                self.state["state_dict"] = copy.deepcopy(self.net.state_dict())
+                self.state["optimizer"] = copy.deepcopy(self.optimizer.state_dict())
                 torch.save(self.state, f"checkpoints/{self.model_name}_dice-{self.best_dice}"
                                        f"_iou-{self.best_iou}_epoch-{epoch}.pth")
             print()
             if since == 6:
+                print(f'Running on test set')
+                
                 print(f'Did not improve for {since} epochs, early stopping triggered')
                 quit()
         quit()

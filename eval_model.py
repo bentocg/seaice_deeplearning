@@ -1,3 +1,4 @@
+from typing_extensions import final
 import torch
 from argparse import ArgumentParser
 import segmentation_models_pytorch as smp
@@ -7,11 +8,11 @@ from utils.data_processing import TestDataset, write_output, merge_output
 from torch.utils.data import DataLoader
 import ttach as tta
 import os
-import re
+import numpy as np
 import cv2
 import pandas as pd
 from shutil import rmtree
-
+from PIL import Image
 
 def parse_args():
     parser = ArgumentParser('Inputs for temple classification pipeline')
@@ -78,12 +79,14 @@ def main():
     model_stats = pd.DataFrame()
 
     # loop through image-mask pairs
-    for idx, ele in enumerate(imgs):
-        img = cv2.imread(ele)
+    for idx, fname in enumerate(imgs):
+        scene = os.path.basename(fname)
+        img = np.array(Image.open(fname))
         mask = cv2.imread(masks[idx], cv2.IMREAD_GRAYSCALE)
-        out_dir = f"{args.output_folder}/{os.path.basename(ele)}/temp_tiles"
+        assert img.shape[:2] == mask.shape
+        out_dir = f"{args.output_folder}/{scene}/temp_tiles"
         os.makedirs(out_dir, exist_ok=True)
-        width, heigth, channels = img.shape
+        heigth, width, channels = img.shape
 
         # write tiles
         for corner in product(range(0, heigth - patch_size, int(patch_size * args.stride)), 
@@ -92,11 +95,11 @@ def main():
             right, top = left + patch_size, down + patch_size
             crop_img = img[left: right, down: top, :]
             if crop_img.shape == (patch_size, patch_size, channels):
-                filename = f'{out_dir}/{os.path.basename(ele).replace(".tif", "")}_{left}_{down}_{right}_{top}.tif'
+                filename = f'{out_dir}/{scene.replace(".tif", "")}_{left}_{down}_{right}_{top}.tif'
                 cv2.imwrite(filename, crop_img)
         
         # instantiate dataset and dataloder
-        dataset = TestDataset(out_dir)
+        dataset = TestDataset('/home/bento/GIS/sea-ice-deeplearning/training_sets/hand/validation512/x')
         dataloader = DataLoader(
             dataset,
             batch_size=batch_size,
@@ -106,26 +109,41 @@ def main():
         )
         
         # write predictions
-        out_dir = f"{args.output_folder}/{os.path.basename(ele)}/pred_tiles"
+        out_dir = f"{args.output_folder}/{scene}/pred_tiles"
         os.makedirs(out_dir, exist_ok=True)
-        
+    
         with torch.no_grad(): 
             for tiles, img_names in dataloader:
                 tiles = tiles.to(device)
                 preds = torch.sigmoid(model(tiles))
-                preds = (preds.detach() > args.threshold).float()
+                preds = (preds.detach() > args.threshold).float() * 255
                 write_output(preds, img_names, out_dir)
         
-        
-
         # merge predictions
+        final_output = merge_output((heigth, width), out_dir)
+        final_output = (final_output > args.threshold).astype(np.uint8)
+        final_output = final_output * 255
+        cv2.imwrite(f'{args.output_folder}/{scene.split(".")[0]}_predicted.png', final_output)
 
         # get IoU and DICE
+        print(mask.shape)
+        print(final_output.shape)
+        intersection = (final_output * mask).sum()
+        cardinality = (final_output + mask).sum()
+        union = np.logical_or(final_output, mask).sum() 
+        iou = intersection / (union + 1E-6)
+        dice = 2 * intersection / (cardinality + 1E-6)
 
         # erase temp tiles
         if not args.save_output:
-            rmtree(f"{args.output_folder}/{os.path.basename(ele)}/temp_tiles")
-            rmtree(f"{args.output_folder}/{os.path.basename(ele)}/pred_tiles")
+            rmtree(f"{args.output_folder}/{scene}/temp_tiles")
+            rmtree(f"{args.output_folder}/{scene}/pred_tiles")
+
+        model_stats = model_stats.append({'model': model_name, 
+                                          'iou':iou, 
+                                          'dice': dice}, ignore_index=True)
+
+    model_stats.to_csv(f'{args.output_folder}/model_stats.csv')
 
 
 if __name__ == '__main__':
