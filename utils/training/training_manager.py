@@ -107,7 +107,10 @@ class Trainer(object):
         images = images.to(self.device)
         targets = targets.to(self.device)
         outputs = self.net(images)
-        loss = self.criterion(outputs, targets)
+        if self.segmentation:
+            loss = self.criterion(outputs, targets)
+        else: 
+            loss = self.criterion(outputs.view(-1, 1), targets.view(-1, 1))
         return loss, outputs
 
     @staticmethod
@@ -142,10 +145,7 @@ class Trainer(object):
         for itr, batch in enumerate(dataloader):
             images, _, targets = batch[0], batch[1], batch[-1]
             targets = targets.type_as(images)
-            if self.segmentation:
-                loss, outputs = self.forward(images, targets)
-            else:
-                loss, outputs = self.forward(images.view(-1, 1), targets.view(-1, 1))
+            loss, outputs = self.forward(images, targets)
             if phase == "training":
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.net.parameters(), 1.0)
