@@ -1,4 +1,5 @@
 from typing_extensions import final
+from utils.data_processing.tile_image import tile_image
 import torch
 from argparse import ArgumentParser
 import segmentation_models_pytorch as smp
@@ -20,7 +21,7 @@ def parse_args():
     parser.add_argument('--random_seed', '-r', type=int, default=42, help='random seed for reproducibility')
     parser.add_argument('--device_id', '-d', type=int, default=-1, help='uses all devices when set to -1')
     parser.add_argument('--num_workers', '-w', type=int, default=4, help='number of workers for dataloader')
-    parser.add_argument('--input_folder', '-i', type=str, help='path to input rasters')
+    parser.add_argument('--input_folder', '-i', type=str, help='path to input test set')
     parser.add_argument('--masks_folder', '-m', type=str, help='path to folder with groundtruth masks')
     parser.add_argument('--stride', '-s', type=float, default=1, help='stride for prediction')
     parser.add_argument('--tta', '-t', type=bool, default=0, help='toggle for test-time augmentation')
@@ -67,39 +68,26 @@ def main():
 
     # scan input and mask folders
     os.makedirs(args.output_folder, exist_ok=True)
-    imgs = []
     masks = []
     for path, _, filenames in os.walk(args.masks_folder):
         for file in filenames:
             if file.endswith('.tif'):
                 masks.append(f'{path}/{file}')
-    imgs = [f'{args.input_folder}/{os.path.basename(ele)}' for ele in masks]
+    scenes = [f'{args.input_folder}/{patch_size}/{os.path.basename(ele)}' for ele in masks]
 
     # store model performance
-    model_stats = pd.DataFrame()
+    if os.path.exists(f'{args.output_folder}/model_stats.csv'):
+        model_stats = pd.read_csv(f'{args.output_folder}/model_stats.csv')
+    else:
+        model_stats = pd.DataFrame()
 
     # loop through image-mask pairs
-    for idx, fname in enumerate(imgs):
+    for idx, fname in enumerate(scenes):
         scene = os.path.basename(fname)
-        img = np.array(Image.open(fname))
         mask = cv2.imread(masks[idx], cv2.IMREAD_GRAYSCALE)
-        assert img.shape[:2] == mask.shape
-        out_dir = f"{args.output_folder}/{scene}/temp_tiles"
-        os.makedirs(out_dir, exist_ok=True)
-        heigth, width, channels = img.shape
-
-        # write tiles
-        for corner in product(range(0, heigth - patch_size, int(patch_size * args.stride)), 
-                              range(0, width - patch_size, int(patch_size * args.stride))):
-            left, down = corner
-            right, top = left + patch_size, down + patch_size
-            crop_img = img[left: right, down: top, :]
-            if crop_img.shape == (patch_size, patch_size, channels):
-                filename = f'{out_dir}/{scene.replace(".tif", "")}_{left}_{down}_{right}_{top}.tif'
-                cv2.imwrite(filename, crop_img)
-        
+        heigth, width = mask.shape
         # instantiate dataset and dataloder
-        dataset = TestDataset('/home/bento/GIS/sea-ice-deeplearning/training_sets/hand/validation512/x')
+        dataset = TestDataset(fname)
         dataloader = DataLoader(
             dataset,
             batch_size=batch_size,
@@ -123,7 +111,7 @@ def main():
         final_output = merge_output((heigth, width), out_dir)
         final_output = (final_output > args.threshold).astype(np.uint8)
         final_output = final_output * 255
-        cv2.imwrite(f'{args.output_folder}/{scene.split(".")[0]}_predicted.png', final_output)
+        cv2.imwrite(f'{args.output_folder}/{scene.split(".")[0]}_{model_name}_predicted.png', final_output)
 
         # get IoU and DICE
         print(mask.shape)
@@ -136,14 +124,13 @@ def main():
 
         # erase temp tiles
         if not args.save_output:
-            rmtree(f"{args.output_folder}/{scene}/temp_tiles")
             rmtree(f"{args.output_folder}/{scene}/pred_tiles")
 
         model_stats = model_stats.append({'model': model_name, 
                                           'iou':iou, 
                                           'dice': dice}, ignore_index=True)
 
-    model_stats.to_csv(f'{args.output_folder}/model_stats.csv')
+    model_stats.to_csv(f'{args.output_folder}/model_stats.csv', index=False)
 
 
 if __name__ == '__main__':

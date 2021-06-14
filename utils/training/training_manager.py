@@ -142,7 +142,10 @@ class Trainer(object):
         for itr, batch in enumerate(dataloader):
             images, _, targets = batch[0], batch[1], batch[-1]
             targets = targets.type_as(images)
-            loss, outputs = self.forward(images, targets)
+            if self.segmentation:
+                loss, outputs = self.forward(images, targets)
+            else:
+                loss, outputs = self.forward(images.view(-1, 1), targets.view(-1, 1))
             if phase == "training":
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.net.parameters(), 1.0)
@@ -230,8 +233,8 @@ class Trainer(object):
                                        f"_iou-{self.best_iou}_epoch-{epoch}.pth")
             print()
             if since == 6:
-                print(f'Running on test set')
-                
+
                 print(f'Did not improve for {since} epochs, early stopping triggered')
+                print(f'Running best state on test set')
                 quit()
         quit()
