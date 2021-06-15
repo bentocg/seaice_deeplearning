@@ -131,8 +131,9 @@ def main():
             rmtree(f"{args.output_folder}/{scene}/pred_tiles")
 
         model_stats = model_stats.append({'model': model_name, 
-                                          'iou':iou, 
-                                          'dice': dice}, ignore_index=True)
+                                          'iou': iou, 
+                                          'dice': dice,
+                                          'scene': scene}, ignore_index=True)
 
     model_stats.to_csv(f'{args.output_folder}/model_stats.csv', index=False)
 
