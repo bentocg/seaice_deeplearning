@@ -41,16 +41,12 @@ def main():
     # load model
     model_name = args.model_name
     model = smp.Unet()
-    state_dict = torch.load(f'checkpoints/{model_name}')
-    model.load_state_dict(state_dict['state_dict'])
+    
 
     # extract model configs
     patch_size = int(model_name.split('_')[1])
     batch_size = int(model_name.split('_')[3])
     
-    # add test-time-augmentation
-    if args.tta:
-        model = tta.SegmentationTTAWrapper(model, tta.aliases.d4_transform(), merge_mode='tsharpen')
 
     # move to GPU if available
     if torch.cuda.is_available():
@@ -62,6 +58,14 @@ def main():
             model = model.to(device)
     else:
         device = 'cpu'
+    state_dict = torch.load(f'checkpoints/{model_name}', map_location=device)
+    model.load_state_dict(state_dict['state_dict'])
+
+
+
+    # add test-time-augmentation
+    if args.tta:
+        model = tta.SegmentationTTAWrapper(model, tta.aliases.d4_transform(), merge_mode='tsharpen')
     model.eval()
             
             
@@ -104,7 +108,7 @@ def main():
             for tiles, img_names in dataloader:
                 tiles = tiles.to(device)
                 preds = torch.sigmoid(model(tiles))
-                preds = (preds.detach() > args.threshold).float() * 255
+                preds = (preds > args.threshold).detach().float() * 255 
                 write_output(preds, img_names, out_dir)
         
         # merge predictions

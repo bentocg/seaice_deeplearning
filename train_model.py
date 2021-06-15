@@ -49,10 +49,8 @@ def main():
         if args.finetune:
 
             # find best_weights for current patch size
-            model_names = [ele for ele in os.listdir('checkpoints') if ele.startswith(f'Resnet34_{args.patch_size}')
-                           and 'last' not in ele]
-            best = sorted(model_names,
-                          key=lambda x: float(re.search('dice-[0-9]{1}.[0-9]+', x).group(0).split('-')[-1]))[-1]
+            
+            best = 'Resnet34_512_best.pth'
 
             # load pretrained dict
             pretrained_dict = torch.load(f'checkpoints/{best}',
