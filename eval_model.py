@@ -115,11 +115,11 @@ def main():
         final_output = merge_output((heigth, width), out_dir)
         final_output = (final_output > args.threshold).astype(np.uint8)
         final_output = final_output * 255
-        cv2.imwrite(f'{args.output_folder}/{scene.split(".")[0]}_{model_name}_predicted.png', final_output)
+        cv2.imwrite(f'{args.output_folder}/{scene.split(".")[0]}_predicted.png', final_output)
 
         # get IoU and DICE
-        print(mask.shape)
-        print(final_output.shape)
+        final_output = (final_output > 0).astype(np.uint8)
+        mask = (mask > 0).astype(np.uint8)
         intersection = (final_output * mask).sum()
         cardinality = (final_output + mask).sum()
         union = np.logical_or(final_output, mask).sum() 
