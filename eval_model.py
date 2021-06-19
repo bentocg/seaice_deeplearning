@@ -147,8 +147,7 @@ def main():
                                           'scene': scene,
                                           'tta': args.tta == 1}, ignore_index=True)
 
-    # log results
-    model_stats.to_csv(f'{args.output_folder}/{model_name[:-4]}/model_stats.csv', index=False)
+    # log results    
     global_stats = global_stats.append({'model_name': model_name,
                                         'tta': args.tta == 1,
                                         'mean_iou': model_stats.iou.mean(),
