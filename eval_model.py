@@ -72,7 +72,7 @@ def main():
             
 
     # scan input and mask folders
-    os.makedirs(f'{args.output_folder}/scene_masks/', exist_ok=True)
+    os.makedirs(f'{args.output_folder}/scene_masks/{model_name[:-4]}', exist_ok=True)
     masks = []
     for path, _, filenames in os.walk(args.masks_folder):
         for file in filenames:
@@ -126,7 +126,7 @@ def main():
         alpha_layer = np.zeros(raw.shape, dtype=np.uint8)
         alpha_layer[final_output > 0, :] = (45, 255, 45)
         raw = cv2.addWeighted(raw, 0.65, alpha_layer, 0.3, 0)
-        cv2.imwrite(f'{args.output_folder}/scene_masks/{model_name[:-4]}_{scene.split(".")[0]}_tta{args.tta}_predicted.png', raw)
+        cv2.imwrite(f'{args.output_folder}/scene_masks/{model_name[:-4]}/{scene.split(".")[0]}_tta{args.tta}_predicted.png', raw)
 
         # get IoU and DICE
         final_output = (final_output > 0).astype(np.uint8)
@@ -147,7 +147,9 @@ def main():
                                           'scene': scene,
                                           'tta': args.tta == 1}, ignore_index=True)
 
-    # log results    
+    # log results
+    # 
+    model_stats.to_csv(f'{args.output_folder}/scene_masks/{model_name[:-4]}/scene_stats.csv')    
     global_stats = global_stats.append({'model_name': model_name,
                                         'tta': args.tta == 1,
                                         'mean_iou': model_stats.iou.mean(),
