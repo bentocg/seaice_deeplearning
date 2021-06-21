@@ -1,12 +1,11 @@
 from typing_extensions import final
+from utils.watershed.watershed import extract_watershed_mask
 from utils.data_processing.tile_image import tile_image
 import torch
 from argparse import ArgumentParser
-import segmentation_models_pytorch as smp
 from utils.training.utility import seed_all
 from itertools import product
 from utils.data_processing import TestDataset, write_output, merge_output
-from torch.utils.data import DataLoader
 import ttach as tta
 import os
 import numpy as np
@@ -17,7 +16,6 @@ from PIL import Image
 
 def parse_args():
     parser = ArgumentParser('Inputs for temple classification pipeline')
-    parser.add_argument('--model_name', '-n', type=str, help='model name for checkpoing loading')
     parser.add_argument('--random_seed', '-r', type=int, default=42, help='random seed for reproducibility')
     parser.add_argument('--device_id', '-d', type=int, default=-1, help='uses all devices when set to -1')
     parser.add_argument('--num_workers', '-w', type=int, default=4, help='number of workers for dataloader')
@@ -40,40 +38,12 @@ def main():
     seed_all(args.random_seed)
     
     # load model
-    model_name = args.model_name
-    model = smp.Unet()
+    model_name = 'Watershed'
     
 
     # extract model configs
-    patch_size = int(model_name.split('_')[1])
-    batch_size = int(model_name.split('_')[3])
+    patch_size = 512
     
-
-    # move to GPU if available
-    if torch.cuda.is_available():
-        if args.device_id == -1:
-          
-            device = 'cuda:0'
-        else:
-            device = f'cuda:{args.device_id}'
-            model = model.to(device)
-    else:
-        device = 'cpu'
-    state_dict = torch.load(f'checkpoints/{model_name}', map_location=device)
-    model.load_state_dict(state_dict['state_dict'])
-    
-    if args.device_id == -1:
-        model = torch.nn.DataParallel(model)
-
-
-
-    # add test-time-augmentation
-    if args.tta:
-        model = tta.SegmentationTTAWrapper(model, tta.aliases.d4_transform(), merge_mode='tsharpen')
-    model.eval()
-            
-            
-
     # scan input and mask folders
     os.makedirs(f'{args.output_folder}/scene_masks/{model_name[:-4]}', exist_ok=True)
     masks = []
@@ -100,25 +70,17 @@ def main():
         heigth, width = mask.shape
         
         # instantiate dataset and dataloder
-        dataset = TestDataset(fname)
-        dataloader = DataLoader(
-            dataset,
-            batch_size=batch_size,
-            num_workers=args.num_workers,
-            pin_memory=False,
-            shuffle=False,
-        )
+        dataloader = ([cv2.imread(img_name, 0), os.path.basename(img_name)] 
+                      for img_name in [f'{fname}/{ele}' for ele in os.listdir(fname)])
         
         # write predictions
         out_dir = f"{args.output_folder}/{scene}/pred_tiles"
         os.makedirs(out_dir, exist_ok=True)
     
-        with torch.no_grad(): 
-            for tiles, img_names in dataloader:
-                tiles = tiles.to(device)
-                preds = torch.sigmoid(model(tiles))
-                preds = (preds > args.threshold).detach().float() * 255 
-                write_output(preds, img_names, out_dir)
+        for ele in dataloader:
+            tile, img_name = ele
+            pred = extract_watershed_mask(tile)
+            write_output([pred], [img_name], out_dir)
         
         # merge predictions
         final_output = merge_output((heigth, width), out_dir)
