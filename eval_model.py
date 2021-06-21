@@ -54,6 +54,7 @@ def main():
         if args.device_id == -1:
           
             device = 'cuda:0'
+            model = model.to(device)
         else:
             device = f'cuda:{args.device_id}'
             model = model.to(device)
