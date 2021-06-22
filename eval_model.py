@@ -26,7 +26,7 @@ def parse_args():
     parser.add_argument('--masks_folder', '-m', type=str, help='path to folder with groundtruth masks')
     parser.add_argument('--raw_image_folder', '-f', type=str, help='path to raw images')
     parser.add_argument('--stride', '-s', type=float, default=1, help='stride for prediction')
-    parser.add_argument('--tta', '-t', type=bool, default=0, help='toggle for test-time augmentation')
+    parser.add_argument('--tta', '-t', type=int, default=0, help='toggle for test-time augmentation')
     parser.add_argument('--output_folder','-o', type=str,  default='test_output', help='output folder for test predictions')
     parser.add_argument('--threshold', '-x', type=float, default=0.5, help='threshold for output binarization')
     parser.add_argument('--save_output', '-u', type=bool, default=0, help='whether to save the output')
