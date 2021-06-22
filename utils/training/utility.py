@@ -133,7 +133,7 @@ def seed_all(seed: int):
 
 
 def get_model_stats():
-    model_stats = [ele for ele in os.listdir('checkpoints') if 'dice' in ele and 'Unet' in ele]
+    model_stats = [ele for ele in os.listdir('checkpoints') if 'dice' in ele and 'scratch' in ele and 'Unet' in ele]
     stats_df = pd.DataFrame()
 
     tsets = []
