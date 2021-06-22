@@ -74,9 +74,12 @@ def main():
 
             # # 3. load the new state dict
             # model.load_state_dict(model_dict)
-
+        if args.finetune == 0:
+            ft = 'scratch'
+        else:
+            ft = 'finetuned' + str(chosen_idx)
         model_name = f"UnetResnet34_{args.patch_size}_{args.learning_rate}_{args.batch_size}_" \
-                     f"{'finetuned' + str(chosen_idx) if args.finetune else 'scratch'}_tsets_{args.tsets}_" \
+                     f"{ft}_tsets_{args.tsets}_" \
                      f"aug_{args.augmentation_mode}_ratio_{args.neg_to_pos_ratio}_loss_{args.criterion}"
 
     else:
