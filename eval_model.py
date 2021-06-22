@@ -69,7 +69,7 @@ def main():
 
 
     # add test-time-augmentation
-    if args.tta:
+    if args.tta == 1:
         model = tta.SegmentationTTAWrapper(model, tta.aliases.d4_transform(), merge_mode='tsharpen')
     model.eval()
             

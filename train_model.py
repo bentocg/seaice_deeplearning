@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 from torchvision.models.resnet import resnet34
 import segmentation_models_pytorch as smp
 from utils.training.training_manager import Trainer
-from utils.training.utility import seed_all
+from utils.training.utility import get_model_stats, seed_all
 import os
 import re
 
@@ -48,26 +48,34 @@ def main():
         # update with pretrained weights from classification
         if args.finetune:
 
-            # find best_weights for current patch size
+            model_stats = get_model_stats()
+            chosen = model_stats.iloc[:100].sample(1).iloc[0]
+            chosen_idx = chosen.name
+            chosen_model = chosen.model_name
+            weights = torch.load(f'checkpoints/{chosen_model}')
+            model.load_state_dict(weights)
+
+
+            # # find best_weights for current patch size
             
-            best = 'Resnet34_512_best.pth'
+            # best = 'Resnet34_512_best.pth'
 
-            # load pretrained dict
-            pretrained_dict = torch.load(f'checkpoints/{best}',
-                                         map_location=torch.device(device))['state_dict']
-            pretrained_dict = {f'encoder.{k}': v for k, v in pretrained_dict.items()}
-            model_dict = model.state_dict()
+            # # load pretrained dict
+            # pretrained_dict = torch.load(f'checkpoints/{best}',
+            #                              map_location=torch.device(device))['state_dict']
+            # pretrained_dict = {f'encoder.{k}': v for k, v in pretrained_dict.items()}
+            # model_dict = model.state_dict()
 
-            # 1. filter out unnecessary keys
-            pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-            # 2. overwrite entries in the existing state dict
-            model_dict.update(pretrained_dict)
+            # # 1. filter out unnecessary keys
+            # pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+            # # 2. overwrite entries in the existing state dict
+            # model_dict.update(pretrained_dict)
 
-            # 3. load the new state dict
-            model.load_state_dict(model_dict)
+            # # 3. load the new state dict
+            # model.load_state_dict(model_dict)
 
         model_name = f"UnetResnet34_{args.patch_size}_{args.learning_rate}_{args.batch_size}_" \
-                     f"{'finetuned' if args.finetune else 'scratch'}_tsets_{args.tsets}_" \
+                     f"{'finetuned{chosen_idx}' if args.finetune else 'scratch'}_tsets_{args.tsets}_" \
                      f"aug_{args.augmentation_mode}_ratio_{args.neg_to_pos_ratio}_loss_{args.criterion}"
 
     else:

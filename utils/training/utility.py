@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import os
 import random
+import pandas as pd
 
 from torch._C import NoneType
 
@@ -129,4 +130,46 @@ def seed_all(seed: int):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.enabled = False
+
+
+def get_model_stats():
+    model_stats = [ele for ele in os.listdir('checkpoints') if 'dice' in ele and 'Unet' in ele]
+    stats_df = pd.DataFrame()
+
+    tsets = []
+    model_names = []
+    for idx, ele in enumerate(model_stats):
+        model_names.append(ele)
+        tset = []
+        if 'hand' in ele:
+            tset.append('hand')
+        if 'watershed' in ele:
+            tset.append('watershed')
+        if 'synthetic' in ele:
+            tset.append('synthetic')
+        tset = '_'.join(tset)
+        model_stats[idx] = model_stats[idx].replace(f'tsets_{tset}', '')
+        tsets.append(tset)
+
+    for idx, ele in enumerate(model_stats):
+        model, patch_size, lr, batch_size, finetuned, _, _, aug, _, ratio, _, loss, dice, iou, epoch = ele.split('_')
+        stats_df = stats_df.append({'patch_size': int(patch_size),
+                                    'lr': float(lr),
+                                    'tset': tsets[idx],
+                                    'aug': aug,
+                                    'ratio': float(ratio),
+                                    'finetuned': finetuned,
+                                    'loss': loss,
+                                    'batch_size': batch_size,
+                                    'dice': round(float(''.join(dice.split('-')[1:])), 3),
+                                    'iou': round(float(''.join(iou.split('-')[1:])), 3),
+                                    'epochs': int(epoch.split('-')[-1].split('.')[0]),
+                                    'model_name': model_names[idx]}, 
+                                ignore_index=True)
+
+    stats_df['dice_iou'] = stats_df.dice + stats_df.iou
+    stats_df['dice_iou'] = stats_df.dice_iou.values / 2
+
+    stats_df = stats_df.sort_values(by=['dice_iou'], ascending=False)
+    return stats_df
 
