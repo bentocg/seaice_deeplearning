@@ -107,6 +107,7 @@ def main():
                             state_dict=state_dict, tsets=tsets, neg_to_pos_ratio=args.neg_to_pos_ratio,
                             augmentation_mode=args.augmentation_mode,
                             num_workers=args.num_workers, loss=args.criterion, save_output=args.save_output)
+    print(f'started training {model_name}')
     model_trainer.start()
 
 
