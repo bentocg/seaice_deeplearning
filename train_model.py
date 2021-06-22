@@ -52,7 +52,8 @@ def main():
             chosen = model_stats.iloc[:50].sample(1).iloc[0]
             chosen_idx = chosen.name
             chosen_model = chosen.model_name
-            weights = torch.load(f'checkpoints/{chosen_model}')
+            weights = torch.load(f'checkpoints/{chosen_model}',
+                                 map_location=torch.device(device))['state_dict']
             model.load_state_dict(weights)
 
 
