@@ -49,7 +49,7 @@ def main():
         if args.finetune:
 
             model_stats = get_model_stats()
-            chosen = model_stats.iloc[:100].sample(1).iloc[0]
+            chosen = model_stats.iloc[:50].sample(1).iloc[0]
             chosen_idx = chosen.name
             chosen_model = chosen.model_name
             weights = torch.load(f'checkpoints/{chosen_model}')

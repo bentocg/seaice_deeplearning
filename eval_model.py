@@ -1,3 +1,4 @@
+import shutil
 from typing_extensions import final
 from utils.data_processing.tile_image import tile_image
 import torch
@@ -111,7 +112,7 @@ def main():
         )
         
         # write predictions
-        out_dir = f"{args.output_folder}/{scene}/pred_tiles"
+        out_dir = f"{args.output_folder}/{scene}/{model_name[:-4]}/pred_tiles"
         os.makedirs(out_dir, exist_ok=True)
     
         with torch.no_grad(): 
@@ -146,9 +147,9 @@ def main():
                                           'dice': dice,
                                           'scene': scene,
                                           'tta': args.tta == 1}, ignore_index=True)
+        shutil.rmtree('/'.join(out_dir.split('/')[:-1]))
 
     # log results
-    # 
     model_stats.to_csv(f'{args.output_folder}/scene_masks/{model_name[:-4]}/scene_stats.csv')    
     global_stats = global_stats.append({'model_name': model_name,
                                         'tta': args.tta == 1,
