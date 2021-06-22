@@ -93,6 +93,10 @@ def main():
         global_stats = pd.DataFrame()
 
     model_stats = pd.DataFrame()
+    global_fp = 0
+    global_tp = 0
+    global_tn = 0
+    global_fn = 0
 
     # loop through image-mask pairs
     for idx, fname in enumerate(scenes):
@@ -142,6 +146,12 @@ def main():
         iou = (intersection + 1) / (union + 1)
         dice = (2 * intersection + 1) / (cardinality + 1)
 
+        # store global metrics
+        global_tp += intersection
+        global_fp += final_output.sum() - intersection
+        global_fn += mask.sum() - intersection
+        global_tn += ((final_output == 0).astype(np.uint8) * (mask == 0).astype(np.uint8)).sum()
+
         model_stats = model_stats.append({'model': model_name, 
                                           'iou': iou, 
                                           'dice': dice,
@@ -150,11 +160,20 @@ def main():
         shutil.rmtree('/'.join(out_dir.split('/')[:-1]))
 
     # log results
-    model_stats.to_csv(f'{args.output_folder}/scene_masks/{model_name[:-4]}/scene_stats.csv')    
+    model_stats.to_csv(f'{args.output_folder}/scene_masks/{model_name[:-4]}/scene_stats.csv')
+    
+    global_precision = global_tp / max(1, global_tp + global_fp)
+    global_recall = global_tp / max(1, global_tp + global_fn)
+    avg_acc = (global_precision + global_tn / max(1, global_tn + global_fn)) / 2
+    global_f1 = 2 * (global_precision * global_recall / (global_precision + global_recall))    
     global_stats = global_stats.append({'model_name': model_name,
+                                        'global_precision': global_precision,
+                                        'global_recall': global_recall,
+                                        'avg_acc': avg_acc,
+                                        'global_f1': global_f1,
                                         'tta': args.tta == 1,
                                         'mean_iou': model_stats.iou.mean(),
-                                        'mean_f1': model_stats.dice.mean()}, ignore_index=True)
+                                        'mean_dice': model_stats.dice.mean()}, ignore_index=True)
     global_stats.to_csv(f'{args.output_folder}/global_stats.csv', index=False)
 
 
