@@ -1,4 +1,4 @@
-__all__ = ['DiceLoss', 'FocalLoss', 'MixedLoss', 'LogCoshLoss', 'DicePerimeterLoss']
+__all__ = ["DiceLoss", "FocalLoss", "MixedLoss", "LogCoshLoss", "DicePerimeterLoss"]
 
 import torch
 from torch import nn
@@ -6,11 +6,11 @@ from torch.nn import functional as F
 
 
 class DiceLoss(nn.Module):
-    def __init__(self, merge='mean'):
+    def __init__(self, merge="mean"):
         super().__init__()
-        self.smooth=1
-        self.p=1
-        self.merge=merge
+        self.smooth = 1
+        self.p = 1
+        self.merge = merge
 
     def forward(self, pred, target):
         pred = torch.sigmoid(pred)
@@ -21,16 +21,16 @@ class DiceLoss(nn.Module):
         den = torch.sum(pred.pow(self.p) + target.pow(self.p), dim=1) + self.smooth
 
         loss = 1 - num / den
-        if self.merge == 'sum':
+        if self.merge == "sum":
             return loss.sum()
-        elif self.merge == 'mean':
+        elif self.merge == "mean":
             return loss.mean()
         else:
-            raise Exception('Merging mode not implemented')
+            raise Exception("Merging mode not implemented")
 
 
 class FocalLoss(nn.Module):
-    def __init__(self, gamma=2.0, merge='mean'):
+    def __init__(self, gamma=2.0, merge="mean"):
         super().__init__()
         self.gamma = gamma
         self.merge = merge
@@ -39,20 +39,27 @@ class FocalLoss(nn.Module):
         if len(target.shape) == 1:
             pred = pred.view(-1)
         if not (target.size() == pred.size()):
-            raise ValueError("Target size ({}) must be the same as input size ({})"
-                             .format(target.size(), pred.size()))
+            raise ValueError(
+                "Target size ({}) must be the same as input size ({})".format(
+                    target.size(), pred.size()
+                )
+            )
         max_val = (-pred).clamp(min=0)
-        loss = pred - pred * target + max_val + \
-            ((-max_val).exp() + (-pred - max_val).exp()).log()
+        loss = (
+            pred
+            - pred * target
+            + max_val
+            + ((-max_val).exp() + (-pred - max_val).exp()).log()
+        )
         invprobs = F.logsigmoid(-pred * (target * 2.0 - 1.0))
-        
-        loss = (invprobs * self.gamma).exp() * loss 
-        if self.merge == 'sum':
+
+        loss = (invprobs * self.gamma).exp() * loss
+        if self.merge == "sum":
             return loss.sum()
-        elif self.merge == 'mean':
+        elif self.merge == "mean":
             return loss.mean()
         else:
-            raise Exception('Merging mode not implemented')
+            raise Exception("Merging mode not implemented")
 
 
 class MixedLoss(nn.Module):
@@ -63,7 +70,7 @@ class MixedLoss(nn.Module):
         self.dice = DiceLoss()
 
     def forward(self, pred, target):
-        loss = self.alpha*self.focal(pred, target) + self.dice(pred, target)
+        loss = self.alpha * self.focal(pred, target) + self.dice(pred, target)
         return loss
 
 
@@ -71,7 +78,7 @@ class LogCoshLoss(nn.Module):
     def __init__(self):
         super().__init__()
         self.dice = DiceLoss()
-    
+
     def forward(self, pred, target):
         loss = torch.log(torch.cosh(self.dice(pred, target)))
         return loss
@@ -89,7 +96,7 @@ class DicePerimeterLoss(nn.Module):
         max_pool = F.max_pool2d(mask, (3, 3), 1, 1)
         contour = F.relu(min_pool - max_pool)
         return contour
-    
+
     def forward(self, pred, target):
         cont_pred = self._contour(pred)
         cont_target = self._contour(target)

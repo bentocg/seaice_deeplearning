@@ -1,4 +1,4 @@
-__all__ = ['predict', 'metric', 'Meter', 'epoch_log', 'seed_all']
+__all__ = ["predict", "metric", "Meter", "epoch_log", "seed_all"]
 
 import numpy as np
 import torch
@@ -6,19 +6,17 @@ import os
 import random
 import pandas as pd
 
-from torch._C import NoneType
-
 
 def predict(X, threshold):
     X_p = np.copy(X)
-    preds = (X_p > threshold).astype('uint8')
+    preds = (X_p > threshold).astype("uint8")
     return preds
 
 
 def compute_ious(pred, label, classes, only_present=True):
-    '''computes iou for one ground truth mask and predicted mask'''
+    """computes iou for one ground truth mask and predicted mask"""
     if np.max(label) == 255:
-        label = np.divide(label, 255, casting='unsafe')
+        label = np.divide(label, 255, casting="unsafe")
 
     ious = []
     for c in classes:
@@ -35,7 +33,7 @@ def compute_ious(pred, label, classes, only_present=True):
 
 
 def compute_iou_batch(outputs, labels, classes=None):
-    '''computes mean iou for a batch of ground truth masks and predicted masks'''
+    """computes mean iou for a batch of ground truth masks and predicted masks"""
     ious = []
     preds = np.copy(outputs)
     labels = np.array(labels)
@@ -47,12 +45,12 @@ def compute_iou_batch(outputs, labels, classes=None):
 
 def metric(probability, truth, threshold=0.5):
     """Calculates dice of positive and negative images seperately
-       probability and truth must be torch tensors"""
+    probability and truth must be torch tensors"""
     batch_size = len(truth)
     with torch.no_grad():
         probability = probability.view(batch_size, -1)
         truth = truth.view(batch_size, -1)
-        assert(probability.shape == truth.shape)
+        assert probability.shape == truth.shape
 
         p = (probability > threshold).float()
         t = (truth > 0.5).float()
@@ -63,7 +61,7 @@ def metric(probability, truth, threshold=0.5):
         pos_index = torch.nonzero(t_sum >= 1)
 
         dice_neg = (p_sum == 0).float()
-        dice_pos = 2 * (p*t).sum(-1)/((p+t).sum(-1))
+        dice_pos = 2 * (p * t).sum(-1) / ((p + t).sum(-1))
 
         dice_neg = dice_neg[neg_index]
         dice_pos = dice_pos[pos_index]
@@ -77,6 +75,7 @@ def metric(probability, truth, threshold=0.5):
 
 class Meter:
     """A meter to keep track of iou and dice scores throughout an epoch"""
+
     def __init__(self, segmentation):
         self.segmentation = segmentation
         self.base_threshold = 0.5
@@ -110,8 +109,10 @@ def epoch_log(epoch_loss, meter):
     """logging the metrics at the end of an epoch"""
     dices, iou = meter.get_metrics()
     dice, dice_neg, dice_pos = dices
-    print("Loss: %0.4f | dice: %0.4f | dice_neg: %0.4f | dice_pos: %0.4f | IoU: %0.4f"
-          % (epoch_loss, dice, dice_neg, dice_pos, iou))
+    print(
+        "Loss: %0.4f | dice: %0.4f | dice_neg: %0.4f | dice_pos: %0.4f | IoU: %0.4f"
+        % (epoch_loss, dice, dice_neg, dice_pos, iou)
+    )
     return dice, iou
 
 
@@ -121,19 +122,25 @@ def seed_all(seed: int):
 
     print("[ Using Seed : ", seed, " ]")
 
-    os.environ['PYTHONHASHSEED'] = str(seed)  # set PYTHONHASHSEED env var at fixed value
+    os.environ["PYTHONHASHSEED"] = str(
+        seed
+    )  # set PYTHONHASHSEED env var at fixed value
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-    torch.cuda.manual_seed(seed) # pytorch (both CPU and CUDA)
-    np.random.seed(seed) # for numpy pseudo-random generator
-    random.seed(seed) # set fixed value for python built-in pseudo-random generator
+    torch.cuda.manual_seed(seed)  # pytorch (both CPU and CUDA)
+    np.random.seed(seed)  # for numpy pseudo-random generator
+    random.seed(seed)  # set fixed value for python built-in pseudo-random generator
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.enabled = False
 
 
 def get_model_stats():
-    model_stats = [ele for ele in os.listdir('checkpoints') if 'dice' in ele and 'scratch' in ele and 'Unet' in ele]
+    model_stats = [
+        ele
+        for ele in os.listdir("checkpoints")
+        if "dice" in ele and "scratch" in ele and "Unet" in ele
+    ]
     stats_df = pd.DataFrame()
 
     tsets = []
@@ -141,35 +148,54 @@ def get_model_stats():
     for idx, ele in enumerate(model_stats):
         model_names.append(ele)
         tset = []
-        if 'hand' in ele:
-            tset.append('hand')
-        if 'watershed' in ele:
-            tset.append('watershed')
-        if 'synthetic' in ele:
-            tset.append('synthetic')
-        tset = '_'.join(tset)
-        model_stats[idx] = model_stats[idx].replace(f'tsets_{tset}', '')
+        if "hand" in ele:
+            tset.append("hand")
+        if "watershed" in ele:
+            tset.append("watershed")
+        if "synthetic" in ele:
+            tset.append("synthetic")
+        tset = "_".join(tset)
+        model_stats[idx] = model_stats[idx].replace(f"tsets_{tset}", "")
         tsets.append(tset)
 
     for idx, ele in enumerate(model_stats):
-        model, patch_size, lr, batch_size, finetuned, _, _, aug, _, ratio, _, loss, dice, iou, epoch = ele.split('_')
-        stats_df = stats_df.append({'patch_size': int(patch_size),
-                                    'lr': float(lr),
-                                    'tset': tsets[idx],
-                                    'aug': aug,
-                                    'ratio': float(ratio),
-                                    'finetuned': finetuned,
-                                    'loss': loss,
-                                    'batch_size': batch_size,
-                                    'dice': round(float(''.join(dice.split('-')[1:])), 3),
-                                    'iou': round(float(''.join(iou.split('-')[1:])), 3),
-                                    'epochs': int(epoch.split('-')[-1].split('.')[0]),
-                                    'model_name': model_names[idx]}, 
-                                ignore_index=True)
+        (
+            model,
+            patch_size,
+            lr,
+            batch_size,
+            finetuned,
+            _,
+            _,
+            aug,
+            _,
+            ratio,
+            _,
+            loss,
+            dice,
+            iou,
+            epoch,
+        ) = ele.split("_")
+        stats_df = stats_df.append(
+            {
+                "patch_size": int(patch_size),
+                "lr": float(lr),
+                "tset": tsets[idx],
+                "aug": aug,
+                "ratio": float(ratio),
+                "finetuned": finetuned,
+                "loss": loss,
+                "batch_size": batch_size,
+                "dice": round(float("".join(dice.split("-")[1:])), 3),
+                "iou": round(float("".join(iou.split("-")[1:])), 3),
+                "epochs": int(epoch.split("-")[-1].split(".")[0]),
+                "model_name": model_names[idx],
+            },
+            ignore_index=True,
+        )
 
-    stats_df['dice_iou'] = stats_df.dice + stats_df.iou
-    stats_df['dice_iou'] = stats_df.dice_iou.values / 2
+    stats_df["dice_iou"] = stats_df.dice + stats_df.iou
+    stats_df["dice_iou"] = stats_df.dice_iou.values / 2
 
-    stats_df = stats_df.sort_values(by=['dice_iou'], ascending=False)
+    stats_df = stats_df.sort_values(by=["dice_iou"], ascending=False)
     return stats_df
-

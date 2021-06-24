@@ -1,9 +1,9 @@
 # Copyright (c) 2019 Bento Goncalves
-# 
+#
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-__all__ = ['extract_watershed_mask']
+__all__ = ["extract_watershed_mask"]
 
 import cv2
 import numpy as np
@@ -28,13 +28,17 @@ def watershed(img, kernel_size):
 
     # find centroids using distance transforms
     dist_transform = cv2.distanceTransform(img_thresh, cv2.DIST_L2, 5)
-    _, centroid_masks = cv2.threshold(dist_transform, 0.2 * dist_transform.max(), 255, 0)
+    _, centroid_masks = cv2.threshold(
+        dist_transform, 0.2 * dist_transform.max(), 255, 0
+    )
     centroid_masks = centroid_masks.astype(np.uint8)
 
     # apply watershed segmentation
     background = cv2.dilate(img_thresh, kernel, iterations=1)
     unknown = cv2.subtract(background, centroid_masks)
-    _, markers, stats, centroids = cv2.connectedComponentsWithStats(centroid_masks, connectivity=8)
+    _, markers, stats, centroids = cv2.connectedComponentsWithStats(
+        centroid_masks, connectivity=8
+    )
     markers = markers + 1
     markers[unknown == 255] = 0
     img_fill = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
@@ -78,15 +82,20 @@ def extract_sea_ice(img, kernel_size=9, n_iter=3):
     """
     fill = np.zeros(img.shape)
     outline = np.zeros(img.shape)
-    background_img = np.random.choice(os.listdir("/home/bento/GIS/sea-ice-deeplearning/background_imgs"))
+    background_img = np.random.choice(
+        os.listdir("/home/bento/GIS/sea-ice-deeplearning/background_imgs")
+    )
     background_img = np.array(
-        Image.open(f'/home/bento/GIS/sea-ice-deeplearning/background_imgs/{background_img}').convert('L'))
+        Image.open(
+            f"/home/bento/GIS/sea-ice-deeplearning/background_imgs/{background_img}"
+        ).convert("L")
+    )
     for _ in range(n_iter):
         curr_fill, curr_outline = watershed(img, kernel_size)
         fill = curr_fill + fill
         outline = curr_outline + outline
         img[fill == 255] = 0
-        #img = img * np.array(fill == 0) + background_img * np.array(fill == 255)
+        # img = img * np.array(fill == 0) + background_img * np.array(fill == 255)
 
     return fill
 
@@ -118,13 +127,17 @@ def extract_watershed_mask(img, kernel_size=9, get_outline=False, add_centroids=
 
     # find centroids using distance transforms
     dist_transform = cv2.distanceTransform(img_thresh, cv2.DIST_L2, 5)
-    _, centroid_masks = cv2.threshold(dist_transform, 0.2 * dist_transform.max(), 255, 0)
+    _, centroid_masks = cv2.threshold(
+        dist_transform, 0.2 * dist_transform.max(), 255, 0
+    )
     centroid_masks = centroid_masks.astype(np.uint8)
 
     # apply watershed segmentation
     background = cv2.dilate(img_thresh, kernel, iterations=1)
     unknown = cv2.subtract(background, centroid_masks)
-    _, markers, stats, centroids = cv2.connectedComponentsWithStats(centroid_masks, connectivity=8)
+    _, markers, stats, centroids = cv2.connectedComponentsWithStats(
+        centroid_masks, connectivity=8
+    )
     markers = markers + 1
     markers[unknown == 255] = 0
     img_col = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
@@ -159,6 +172,6 @@ def extract_watershed_mask(img, kernel_size=9, get_outline=False, add_centroids=
     img_fill[img_fill < 255] = 0
 
     if get_outline:
-        return {'mask': img_fill, 'outline': outline}
+        return {"mask": img_fill, "outline": outline}
     else:
         return img_fill
