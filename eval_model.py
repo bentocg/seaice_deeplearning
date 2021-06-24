@@ -64,8 +64,9 @@ def main():
     state_dict = torch.load(f'checkpoints/{model_name}', map_location=device)
     model.load_state_dict(state_dict['state_dict'])
     
-    if args.device_id == -1:
+    if args.device_id == -1 and torch.cuda.is_available():
         model = torch.nn.DataParallel(model)
+        batch_size *= 8
 
 
 
