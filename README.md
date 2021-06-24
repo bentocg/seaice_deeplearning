@@ -4,8 +4,8 @@
 ---
 ### Highlights:
 * Leverages fine-tuning from synthetic data to greatly improve out-of-sample performance.
-* $\greater$ 0.85 F1 score in a non-trivial, hand-annotated test set.
-* Over 40% improvement when compared with threshold-based methods.
+* \> 0.85 F1 score in a non-trivial, hand-annotated test set.
+* Over 30% improvement when compared with threshold-based methods.
 * Best model weights (incoming) are easily loaded with the PyTorch Segmentation Models package.
 * Over 850 random-search experiments ran for hyperparameter tuning with the Bridges2 supercomputer.
 
