@@ -100,7 +100,7 @@ def main():
 
     if args.device_id == -1 and torch.cuda.is_available():
         model = torch.nn.DataParallel(model)
-        batch_size *= 16
+        batch_size *= 24
 
     # add test-time-augmentation
     if args.tta == 1:
@@ -122,11 +122,9 @@ def main():
     raw_images = [f"{args.raw_image_folder}/{os.path.basename(ele)}" for ele in masks]
 
     # store model performance
-    if os.path.exists(f"{args.output_folder}/global_stats.csv"):
-        global_stats = pd.read_csv(f"{args.output_folder}/global_stats.csv")
-    else:
-        global_stats = pd.DataFrame()
-
+    if not os.path.exists(f"{args.output_folder}/global_stats.csv"):
+        with open(f'{args.output_folder}/global_stats.csv', 'w') as file:
+            file.write("model_name,global_precision,global_recall,avg_acc,global_f1,tta,mean_iou,mean_dice\n")
     model_stats = pd.DataFrame()
     global_fp = 0
     global_tp = 0
@@ -227,20 +225,8 @@ def main():
     global_f1 = 2 * (
         global_precision * global_recall / (global_precision + global_recall)
     )
-    global_stats = global_stats.append(
-        {
-            "model_name": model_name,
-            "global_precision": global_precision,
-            "global_recall": global_recall,
-            "avg_acc": avg_acc,
-            "global_f1": global_f1,
-            "tta": args.tta == 1,
-            "mean_iou": model_stats.iou.mean(),
-            "mean_dice": model_stats.dice.mean(),
-        },
-        ignore_index=True,
-    )
-    global_stats.to_csv(f"{args.output_folder}/global_stats.csv", index=False)
+    with open(f'{args.output_folder}/global_stats.csv', 'a') as file:
+        file.write(f"{model_name},{global_precision},{global_recall},{avg_acc},{global_f1},{args.tta == 1},{model_stats.iou.mean()},{model_stats.dice.mean()}\n")
 
 
 if __name__ == "__main__":
