@@ -131,10 +131,27 @@ def main():
         final_output = (final_output > args.threshold).astype(np.uint8)
         final_output = final_output * 255
 
-        # write alpha layer
-        alpha_layer = np.zeros(raw.shape, dtype=np.uint8)
-        alpha_layer[final_output > 0, :] = (45, 255, 45)
-        raw = cv2.addWeighted(raw, 0.65, alpha_layer, 0.3, 0)
+        # get alpha masks
+        tp = final_output * (mask // 255)
+        fp = final_output * (mask == 0).astype(np.uint8) 
+        fn = mask - tp
+        
+        # write alpha layers
+        alpha_layer_tp = np.zeros(raw.shape, dtype=np.uint8)
+        alpha_layer_tp[tp > 0, :] = (45, 255, 45)
+        blend_fp = cv2.addWeighted(raw, 0.65, alpha_layer_tp, 0.3, 0)
+        raw[tp > 0, :] = blend_fp[tp > 0, :]
+        
+        alpha_layer_fp = np.zeros(raw.shape, dtype=np.uint8)
+        alpha_layer_fp[fp > 0, :] = (255, 45, 45)
+        blend_fp = cv2.addWeighted(raw, 0.65, alpha_layer_fp, 0.3, 0)
+        raw[fp > 0, :] = blend_fp[fp > 0, :]
+        
+        alpha_layer_fn = np.zeros(raw.shape, dtype=np.uint8)
+        alpha_layer_fn[fn > 0, :] = (45, 45, 255)
+        blend_fn = cv2.addWeighted(raw, 0.65, alpha_layer_fn, 0.3, 0)
+        raw[fn > 0, :] = blend_fn[fn > 0, :]
+
         cv2.imwrite(
             f'{args.output_folder}/scene_masks/{model_name[:-4]}/{scene.split(".")[0]}_tta{args.tta}_predicted.png',
             raw,
