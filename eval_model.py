@@ -185,6 +185,11 @@ def main():
         blend_fn = cv2.addWeighted(raw, 0.65, alpha_layer_fn, 0.3, 0)
         raw[fn > 0, :] = blend_fn[fn > 0, :]
 
+        cv2.imwrite(
+            f'{args.output_folder}/scene_masks/{model_name[:-4]}/{scene.split(".")[0]}_tta{args.tta}_predicted.png',
+            raw,
+        )
+
         # get IoU and DICE
         final_output = (final_output > 0).astype(np.uint8)
         mask = (mask > 0).astype(np.uint8)
