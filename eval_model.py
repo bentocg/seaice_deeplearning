@@ -100,7 +100,7 @@ def main():
 
     if args.device_id == -1 and torch.cuda.is_available():
         model = torch.nn.DataParallel(model)
-        batch_size *= 8
+        batch_size *= 16
 
     # add test-time-augmentation
     if args.tta == 1:
