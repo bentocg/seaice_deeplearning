@@ -124,7 +124,7 @@ def main():
     # store model performance
     if not os.path.exists(f"{args.output_folder}/global_stats.csv"):
         with open(f'{args.output_folder}/global_stats.csv', 'w') as file:
-            file.write("model_name,global_precision,global_recall,avg_acc,global_f1,tta,mean_iou,mean_dice\n")
+            file.write("avg_acc,global_f1,global_precision,global_recall,mean_dice,mean_iou,model_name,tta\n")
     model_stats = pd.DataFrame()
     global_fp = 0
     global_tp = 0
@@ -226,7 +226,7 @@ def main():
         global_precision * global_recall / (global_precision + global_recall)
     )
     with open(f'{args.output_folder}/global_stats.csv', 'a') as file:
-        file.write(f"{model_name},{global_precision},{global_recall},{avg_acc},{global_f1},{args.tta == 1},{model_stats.iou.mean()},{model_stats.dice.mean()}\n")
+        file.write(f"{avg_acc},{global_f1},{global_precision},{global_recall},{model_stats.dice.mean()},{model_stats.iou.mean()},{model_name},{int(args.tta == 1)}\n")
 
 
 if __name__ == "__main__":
