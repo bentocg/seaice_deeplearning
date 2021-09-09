@@ -31,7 +31,7 @@ def parse_args():
     parser = ArgumentParser("Inputs for temple classification pipeline")
     parser.add_argument(
         "--model_name", "-n", type=str, help="model name for checkpoing loading",
-        default="UnetResnet34_256_3.083932746189429e-05_200_finetuned199_tsets_hand_aug_simple_ratio_0.5_loss_BCE_dice-0.8904938101768494_iou-0.7157852498707774_epoch-0.pth"
+        default="UnetResnet34_512_7.589545776600207e-05_60_finetuned58_tsets_hand_aug_simple_ratio_0.66_loss_Mixed_dice-0.8761923313140869_iou-0.7119205044936907_epoch-8.pth"
     )
     parser.add_argument(
         "--random_seed",
