@@ -115,7 +115,10 @@ def main():
             model = model.to(device)
     else:
         device = "cpu"
-    state_dict = torch.load(f"/checkpoints/{model_name}", map_location=device)
+    cp_path = f"checkpoints/{model_name}"
+    if args.checkpoint_path:
+        cp_path = f"{args.checkpoint_path}/{cp_path}"
+    state_dict = torch.load(cp_path, map_location=device)
     model.load_state_dict(state_dict["state_dict"])
 
     # add test-time-augmentation
