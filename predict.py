@@ -175,7 +175,7 @@ def main():
     gdf = polygonize_raster(args.input_raster, final_output)
 
     os.makedirs(f"{args.output_folder}/shapefiles", exist_ok=True)
-    if gdf:
+    if len(gdf) > 0:
         gdf["scene"] = scene
         gdf.to_file(f"{args.output_folder}/shapefiles/{scene.split('.')[0]}.shp")
         print(time.time() - tic)
