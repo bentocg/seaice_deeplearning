@@ -54,6 +54,12 @@ def parse_args():
         default=4,
         help="number of workers for dataloader",
     )
+    parser.add_argument(
+        "--checkpoint_path",
+        "-p",
+        type=str,
+        help="path to checkpoints folder",
+    )
     parser.add_argument("--input_raster", "-i", type=str, help="path to input raster")
     parser.add_argument(
         "--stride", "-s", type=float, default=1, help="stride for prediction"
@@ -109,7 +115,7 @@ def main():
             model = model.to(device)
     else:
         device = "cpu"
-    state_dict = torch.load(f"checkpoints/{model_name}", map_location=device)
+    state_dict = torch.load(f"/checkpoints/{model_name}", map_location=device)
     model.load_state_dict(state_dict["state_dict"])
 
     # add test-time-augmentation
