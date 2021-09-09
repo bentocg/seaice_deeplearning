@@ -30,7 +30,8 @@ from utils.training.utility import seed_all
 def parse_args():
     parser = ArgumentParser("Inputs for temple classification pipeline")
     parser.add_argument(
-        "--model_name", "-n", type=str, help="model name for checkpoing loading"
+        "--model_name", "-n", type=str, help="model name for checkpoing loading",
+        default="UnetResnet34_256_3.083932746189429e-05_200_finetuned199_tsets_hand_aug_simple_ratio_0.5_loss_BCE_dice-0.8904938101768494_iou-0.7157852498707774_epoch-0.pth"
     )
     parser.add_argument(
         "--random_seed",
@@ -64,7 +65,7 @@ def parse_args():
         "--output_folder",
         "-o",
         type=str,
-        default="test_output",
+        default="processed_imagery",
         help="output folder for predicted shapefiles",
     )
     parser.add_argument(
@@ -91,7 +92,7 @@ def main():
 
     # extract model configs
     patch_size = int(model_name.split("_")[1])
-    batch_size = 16
+    batch_size = int(model_name.split("_")[3]) // 4
 
     # move to GPU if available
     if torch.cuda.is_available():
