@@ -25,7 +25,6 @@ def process_tile(tile, input_raster):
         window = Window(y, x, y_size, x_size)
         transforms = rasterio.windows.transform(window, src.transform)
         image = src.read(1, window=window)  # first band
-        print(mask.sum())
         if 0 in mask.shape:
             results = []
         else:
@@ -112,11 +111,12 @@ def polygonize_raster(input_raster, final_output, size=1000):
 
     if "geometry" in gdf.columns:
         new_geometry = gdf.loc[gdf.is_border == 1]["geometry"].buffer(1)
-        new_geometry = list(unary_union(new_geometry))
-        border_pols = gpd.GeoDataFrame(crs=crs)
-        border_pols["geometry"] = new_geometry
-        border_pols["geometry"] = border_pols["geometry"].buffer(-1)
-        gdf.loc[gdf.is_border == 1, "geometry"] = border_pols["geometry"]
+        if len(new_geometry) > 1:
+            new_geometry = list(unary_union(new_geometry))
+            border_pols = gpd.GeoDataFrame(crs=crs)
+            border_pols["geometry"] = new_geometry
+            border_pols["geometry"] = border_pols["geometry"].buffer(-1)
+            gdf.loc[gdf.is_border == 1, "geometry"] = border_pols["geometry"]
     print(
         f"Processed scene {input_raster} to {len(gdf)} polygons with a patch_sizee of {size} in {(time.time() - tic_total):.2f} seconds."
     )
