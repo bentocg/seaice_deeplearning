@@ -51,7 +51,7 @@ def parse_args():
         "--num_workers",
         "-w",
         type=int,
-        default=4,
+        default=1,
         help="number of workers for dataloader",
     )
     parser.add_argument(
