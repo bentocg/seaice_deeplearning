@@ -13,7 +13,7 @@ class Tiff:
                 img = src.read([2, 3, 5]).transpose(1, 2, 0)
                 
         else:
-            raise NotImplementedError('sensor not supported')
+            raise NotImplementedError(f'sensor not supported for {raster_path}')
         width = src.width
         height = src.height
         meta = src.meta
