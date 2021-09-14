@@ -31,7 +31,7 @@ def parse_args():
     parser = ArgumentParser("Inputs for temple classification pipeline")
     parser.add_argument(
         "--model_name", "-n", type=str, help="model name for checkpoing loading",
-        default="UnetResnet34_512_7.589545776600207e-05_60_finetuned58_tsets_hand_aug_simple_ratio_0.66_loss_Mixed_dice-0.8761923313140869_iou-0.7119205044936907_epoch-8.pth"
+        default="UnetResnet34_512_8.197217315846395e-05_60_scratch_tsets_hand_aug_simple_ratio_0.75_loss_Mixed_dice-0.8704461455345154_iou-0.6997870008453754_epoch-20.pth"
     )
     parser.add_argument(
         "--random_seed",
@@ -167,7 +167,6 @@ def main():
     for subdir in ['preds', 'tiles']:
         shutil.rmtree(f"{args.output_folder}/{scene}/{subdir}")
     print(f"Finished mosaicing output in {time.time() - tic}")
-    cv2.imwrite('ba.png', final_output)
 
     # create shapefiles
     tic = time.time()
