@@ -62,7 +62,7 @@ def parse_args():
     )
     parser.add_argument("--input_raster", "-i", type=str, help="path to input raster")
     parser.add_argument(
-        "--stride", "-s", type=float, default=0.5, help="stride for prediction"
+        "--stride", "-s", type=float, default=0.33, help="stride for prediction"
     )
     parser.add_argument(
         "--tta", "-t", type=int, default=1, help="toggle for test-time augmentation"
