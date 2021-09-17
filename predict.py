@@ -163,9 +163,17 @@ def main():
     # merge predictions
     tic = time.time()
     final_output = merge_output((height, width), out_dir)
-    final_output = (final_output > args.threshold).astype(np.uint8) * 255
-    for subdir in ['preds', 'tiles']:
-        shutil.rmtree(f"{args.output_folder}/{scene}/{subdir}")
+    final_output = (final_output > args.threshold).astype(np.uint8)
+    final_output = final_output * 255
+
+    # write alpha layers
+    alpha_layer = np.zeros(img.shape, dtype=np.uint8)
+    alpha_layer[final_output > 0, :] = (45, 255, 45)
+    blend = cv2.addWeighted(img, 0.65, alpha_layer, 0.3, 0)
+    img[final_output > 0, :] = blend[final_output > 0, :]
+    img = img[::8, ::8]
+    shutil.rmtree(f"{args.output_folder}/{scene}")
+    cv2.imwrite(f"{args.output_folder}/{scene}", img)
     print(f"Finished mosaicing output in {time.time() - tic}")
 
     # create shapefiles

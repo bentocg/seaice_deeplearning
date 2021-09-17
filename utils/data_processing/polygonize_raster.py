@@ -52,7 +52,7 @@ def process_tile(tile, input_raster):
         except:
             return gpd.GeoDataFrame()
         gdf_size = gpd.GeoDataFrame(crs=crs, geometry=geometry)
-        gdf_size["geometry"] = gdf_size["geometry"].simplify(3)
+        gdf_size["geometry"] = gdf_size["geometry"].simplify(4)
 
         # separate border polygons from inside polygons
         border = LineString(
