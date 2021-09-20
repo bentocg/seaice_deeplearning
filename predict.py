@@ -168,7 +168,7 @@ def main():
 
     # write alpha layers
     alpha_layer = np.zeros(img.shape, dtype=np.uint8)
-    alpha_layer[final_output > 0, :] = (45, 255, 45)
+    alpha_layer[final_output > 0, :] = (45, 45, 255)
     blend = cv2.addWeighted(img, 0.65, alpha_layer, 0.3, 0)
     img[final_output > 0, :] = blend[final_output > 0, :]
     img = img[::8, ::8]
