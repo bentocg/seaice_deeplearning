@@ -5,6 +5,7 @@ from PIL import Image
 import numpy as np
 import torch
 import os
+import cv2
 from utils.data_processing import get_transforms
 
 
@@ -66,7 +67,7 @@ class SeaIceDataset(Dataset):
         img_path = self.img_names[idx]
         label = self.bin_labels[idx]
         is_hand = self.is_hand[idx]
-        img = np.array(Image.open(img_path))
+        img = cv2.cvtColor(np.array(Image.open(img_path)), cv2.COLOR_BGR2GRAY)
         if self.segmentation:
             mask_path = self.mask_names[idx]
             if mask_path:
@@ -134,7 +135,7 @@ class TestDataset(Dataset):
 
         # read img and apply transforms
         img_name = self.img_names[idx]
-        img = np.array(Image.open(img_name))
+        img = cv2.cvtColor(np.array(Image.open(img_name)), cv2.COLOR_BGR2GRAY)
         try:
             img = self.transforms(image=img)["image"]
         except:
