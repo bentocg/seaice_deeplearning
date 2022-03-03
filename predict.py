@@ -94,7 +94,7 @@ def main():
 
     # load model
     model_name = args.model_name
-    model = smp.Unet()
+    model = smp.Unet(in_channels=1)
 
     # extract model configs
     patch_size = int(model_name.split("_")[1])

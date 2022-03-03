@@ -17,7 +17,7 @@ def train_transform(size, mode):
                 A.RandomBrightnessContrast(p=0.5),
                 A.Flip(p=0.5),
                 A.RandomRotate90(p=1),
-                A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+                A.Normalize(mean=0.5, std=0.25),
                 ToTensorV2(),
             ]
         )
@@ -61,7 +61,7 @@ def train_transform(size, mode):
                 ),
                 A.Flip(p=0.66),
                 A.CenterCrop(height=size, width=size),
-                A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+                A.Normalize(mean=0.5, std=0.25),
                 ToTensorV2(),
             ]
         )
@@ -71,7 +71,7 @@ def val_transform(size):
     return A.Compose(
         [
             A.CenterCrop(height=size, width=size),
-            A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+            A.Normalize(mean=0.5, std=0.25),
             ToTensorV2(),
         ]
     )
@@ -80,7 +80,7 @@ def val_transform(size):
 def test_transform():
     return A.Compose(
         [
-            A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+            A.Normalize(mean=0.5, std=0.25),
             ToTensorV2(),
         ]
     )

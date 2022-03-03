@@ -115,7 +115,7 @@ def main():
 
     # define model
     if args.segmentation:
-        model = smp.Unet("resnet34", encoder_weights="imagenet", activation=None)
+        model = smp.Unet("resnet34", encoder_weights="imagenet", activation=None, in_channels=1)
 
         # update with pretrained weights from classification
         if args.finetune:

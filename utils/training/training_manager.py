@@ -1,3 +1,4 @@
+
 from utils.loss_functions.mixed_loss import DicePerimeterLoss, LogCoshLoss
 from utils.training import Meter, epoch_log
 from utils.loss_functions import (
@@ -123,8 +124,8 @@ class Trainer(object):
         self.iou_scores = {phase: [] for phase in self.phases}
         self.writer = SummaryWriter(f"runs/{self.model_name}")
         self.inv_normalize = transforms.Normalize(
-            mean=[-0.485 / 0.229, -0.456 / 0.224, -0.406 / 0.255],
-            std=[1 / 0.229, 1 / 0.224, 1 / 0.255],
+            mean=[-0.5 / 0.25],
+            std=[1 / 0.25],
         )
 
     def forward(self, images, targets):
@@ -215,8 +216,8 @@ class Trainer(object):
                         torch.vstack(
                             [
                                 images,
-                                targets.repeat(1, 3, 1, 1),
-                                outputs.repeat(1, 3, 1, 1),
+                                targets.repeat(1, 1, 1, 1),
+                                outputs.repeat(1, 1, 1, 1),
                             ]
                         ),
                         nrow=6,
@@ -242,7 +243,7 @@ class Trainer(object):
         self.iou_scores[phase].append(iou)
         self.writer.add_scalar(f"Dice/{phase}", dice, epoch)
         self.writer.add_scalar(f"IoU/{phase}", iou, epoch)
-        self.writer.add_scalar("learning rate", epoch)
+        self.writer.add_scalar("learning rate", self.optimizer.param_groups["lr"], epoch)
 
         torch.cuda.empty_cache()
         self.state["epoch"] = epoch

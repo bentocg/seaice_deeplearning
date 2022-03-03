@@ -89,7 +89,7 @@ class SeaIceDataset(Dataset):
                     mask_path = self.mask_names[idx]
                     label = self.bin_labels[idx]
 
-                    img = np.array(Image.open(img_path))
+                    img = cv2.cvtColor(np.array(Image.open(img_path)), cv2.COLOR_BGR2GRAY)
                     if mask_path:
                         mask = np.array(Image.open(mask_path), dtype=np.uint8)
                     else:
@@ -107,7 +107,7 @@ class SeaIceDataset(Dataset):
                     print(self.img_names[idx])
                     idx -= 5
                     img_path = self.img_names[idx]
-                    img = np.array(Image.open(img_path))
+                    img = cv2.cvtColor(np.array(Image.open(img_path)), cv2.COLOR_BGR2GRAY)
                     img = self.transforms(image=img)["image"]
                     label = self.bin_labels[idx]
         is_hand = self.is_hand[idx]

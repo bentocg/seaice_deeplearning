@@ -34,8 +34,8 @@ def provider(
     num_pos = sum(image_dataset.bin_labels)
     num_neg = len(image_dataset) - num_pos
     total_prob_neg = neg_to_pos_ratio / (neg_to_pos_ratio + 1)
-    prob_neg = total_prob_neg / num_neg
-    prob_pos = (1 - total_prob_neg) / num_pos
+    prob_neg = total_prob_neg / max(1, num_neg)
+    prob_pos = (1 - total_prob_neg) / max(1, num_pos)
     weights = torch.Tensor(
         [prob_pos if ele else prob_neg for ele in image_dataset.bin_labels]
     )
