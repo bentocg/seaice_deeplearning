@@ -40,9 +40,10 @@ def train_transform(size, mode):
                 ),
                 A.OneOf(
                     [
-                        A.OpticalDistortion(p=0.3),
-                        A.GridDistortion(p=0.1),
-                        A.IAAPiecewiseAffine(p=0.3),
+                        A.ElasticTransform(alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03,
+                                           p=0.5),
+                        A.GridDistortion(p=0.5),
+                        A.OpticalDistortion(distort_limit=2, shift_limit=0.5, p=1)
                     ],
                     p=0.2,
                 ),
@@ -57,7 +58,7 @@ def train_transform(size, mode):
                     p=0.3,
                 ),
                 A.HueSaturationValue(
-                    p=0.4, hue_shift_limit=5, val_shift_limit=5, sat_shift_limit=5
+                    p=0.4, hue_shift_limit=0, val_shift_limit=15, sat_shift_limit=0
                 ),
                 A.Flip(p=0.66),
                 A.CenterCrop(height=size, width=size),
