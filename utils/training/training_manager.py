@@ -243,7 +243,7 @@ class Trainer(object):
         self.iou_scores[phase].append(iou)
         self.writer.add_scalar(f"Dice/{phase}", dice, epoch)
         self.writer.add_scalar(f"IoU/{phase}", iou, epoch)
-        self.writer.add_scalar("learning rate", self.optimizer.param_groups["lr"], epoch)
+        self.writer.add_scalar("learning rate", self.optimizer.param_groups[0]["lr"], epoch)
 
         torch.cuda.empty_cache()
         self.state["epoch"] = epoch
