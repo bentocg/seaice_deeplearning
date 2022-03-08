@@ -83,7 +83,7 @@ def parse_args():
     )
     parser.add_argument(
         "--polygons",
-        "-x",
+        "-z",
         type=int,
         default=0,
         help="write polygons to shapefile?"
