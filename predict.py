@@ -81,6 +81,13 @@ def parse_args():
         default=0.5,
         help="threshold for output binarization",
     )
+    parser.add_argument(
+        "--polygons",
+        "-x",
+        type=int,
+        default=0,
+        help="write polygons to shapefile?"
+    )
 
     return parser.parse_args()
 
@@ -179,15 +186,16 @@ def main():
     # create shapefiles
     tic = time.time()
 
-    gdf = polygonize_raster(args.input_raster, final_output)
+    if args.polygons:
+        gdf = polygonize_raster(args.input_raster, final_output)
 
-    os.makedirs(f"{args.output_folder}/shapefiles", exist_ok=True)
-    if len(gdf) > 0:
-        gdf["scene"] = scene
-        gdf.to_file(f"{args.output_folder}/shapefiles/{scene.split('.')[0]}.shp")
-        print(time.time() - tic)
-    else:
-        print(f"No sea ice polygons for {args.input_scene}")
+        os.makedirs(f"{args.output_folder}/shapefiles", exist_ok=True)
+        if len(gdf) > 0:
+            gdf["scene"] = scene
+            gdf.to_file(f"{args.output_folder}/shapefiles/{scene.split('.')[0]}.shp")
+            print(time.time() - tic)
+        else:
+            print(f"No sea ice polygons for {args.input_scene}")
 
 
 if __name__ == "__main__":
