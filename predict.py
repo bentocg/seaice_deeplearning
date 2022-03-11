@@ -41,6 +41,13 @@ def parse_args():
         help="random seed for reproducibility",
     )
     parser.add_argument(
+        "--batch_size",
+        "-b",
+        type=int,
+        default=-1,
+        help="batch size for prediction, can be inferred by model name or set manually",
+    )
+    parser.add_argument(
         "--device_id",
         "-d",
         type=int,
@@ -89,6 +96,14 @@ def parse_args():
         help="write polygons to shapefile?"
     )
 
+    parser.add_argument(
+        "--thumbnail_outputs",
+        "-u",
+        type=int,
+        default=1,
+        help="create thumbnail outputs?"
+    )
+
     return parser.parse_args()
 
 
@@ -105,7 +120,7 @@ def main():
 
     # extract model configs
     patch_size = int(model_name.split("_")[1])
-    batch_size = int(model_name.split("_")[3]) // 4
+    batch_size = args.batch_size or int(model_name.split("_")[3]) * 4
 
     # move to GPU if available
     if torch.cuda.is_available():
@@ -167,21 +182,27 @@ def main():
             write_output(preds, img_names, out_dir)
     print(f"Finished writing CNN predictions in {time.time() - tic}")
 
+    # free up memory
+    del dataloader
+    del dataset
+    del model
+
     # merge predictions
     tic = time.time()
     final_output = merge_output((height, width), out_dir)
     final_output = (final_output > args.threshold).astype(np.uint8)
     final_output = final_output * 255
+    shutil.rmtree(f"{args.output_folder}/{scene}")
 
     # write alpha layers
-    alpha_layer = np.zeros(img.shape, dtype=np.uint8)
-    alpha_layer[final_output > 0, :] = (45, 45, 255)
-    blend = cv2.addWeighted(img, 0.65, alpha_layer, 0.3, 0)
-    img[final_output > 0, :] = blend[final_output > 0, :]
-    img = img[::8, ::8]
-    shutil.rmtree(f"{args.output_folder}/{scene}")
-    cv2.imwrite(f"{args.output_folder}/{scene}", img)
-    print(f"Finished mosaicing output in {time.time() - tic}")
+    if args.thumbnail_outputs:
+        alpha_layer = np.zeros(img.shape, dtype=np.uint8)
+        alpha_layer[final_output > 0, :] = (45, 45, 255)
+        blend = cv2.addWeighted(img, 0.65, alpha_layer, 0.3, 0)
+        img[final_output > 0, :] = blend[final_output > 0, :]
+        img = img[::8, ::8]
+        cv2.imwrite(f"{args.output_folder}/{scene}", img)
+        print(f"Finished mosaicing output in {time.time() - tic}")
 
     # create shapefiles
     tic = time.time()
