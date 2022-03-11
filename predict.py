@@ -120,7 +120,7 @@ def main():
 
     # extract model configs
     patch_size = int(model_name.split("_")[1])
-    batch_size = args.batch_size or int(model_name.split("_")[3]) * 4
+    batch_size = args.batch_size or int(model_name.split("_")[3]) // 4
 
     # move to GPU if available
     if torch.cuda.is_available():
@@ -143,11 +143,13 @@ def main():
     state_dict = torch.load(cp_path, map_location=device)
     model.load_state_dict(state_dict["state_dict"])
 
-    # add test-time-augmentation
+    # add test-time-augmentation -- tta makes the model more memory intensive
     if args.tta == 1:
         model = tta.SegmentationTTAWrapper(
             model, tta.aliases.d4_transform(), merge_mode="tsharpen"
         )
+    else:
+        batch_size *= 8
     model.eval()
 
     # scan input and mask folder
@@ -178,9 +180,11 @@ def main():
         for tiles, img_names in dataloader:
             tiles = tiles.to(device)
             preds = torch.sigmoid(model(tiles))
-            preds = (preds > args.threshold).detach().float() * 255
-            write_output(preds, img_names, out_dir)
+            #preds = (preds > args.threshold).detach().float() * 255
+            #write_output(preds, img_names, out_dir)
     print(f"Finished writing CNN predictions in {time.time() - tic}")
+    shutil.rmtree(f"{args.output_folder}/{scene}")
+    return None
 
     # free up memory
     del dataloader
