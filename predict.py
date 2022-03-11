@@ -148,8 +148,8 @@ def main():
         model = tta.SegmentationTTAWrapper(
             model, tta.aliases.d4_transform(), merge_mode="tsharpen"
         )
-    else:
-        batch_size *= 8
+        model.to(device)
+
     model.eval()
 
     # scan input and mask folder
@@ -178,6 +178,7 @@ def main():
     # write predictions
     with torch.no_grad():
         for tiles, img_names in dataloader:
+            print(len(img_names))
             tiles = tiles.to(device)
             preds = torch.sigmoid(model(tiles))
             #preds = (preds > args.threshold).detach().float() * 255
