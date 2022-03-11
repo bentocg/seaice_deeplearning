@@ -181,6 +181,7 @@ def main():
             tiles = tiles.to(device)
             if args.tta:
                 mask = torch.zeros(tiles.size())
+                mask.to(device)
                 for transformer in transforms:
                     preds = model(transformer.augment_image(tiles))
                     preds = transformer.deaugment_mask(preds)
