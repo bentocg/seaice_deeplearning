@@ -146,7 +146,7 @@ def main():
     # add test-time-augmentation -- tta makes the model more memory intensive
     if args.tta == 1:
         model = tta.SegmentationTTAWrapper(
-            model, tta.aliases.d4_transform(), merge_mode="tsharpen"
+            model, tta.aliases.d4_transform(), merge_mode="mean"
         )
         model.to(device)
 
@@ -178,7 +178,6 @@ def main():
     # write predictions
     with torch.no_grad():
         for tiles, img_names in dataloader:
-            print(len(img_names))
             tiles = tiles.to(device)
             preds = torch.sigmoid(model(tiles))
             #preds = (preds > args.threshold).detach().float() * 255
