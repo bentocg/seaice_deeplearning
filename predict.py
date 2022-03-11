@@ -143,15 +143,6 @@ def main():
     state_dict = torch.load(cp_path, map_location=device)
     model.load_state_dict(state_dict["state_dict"])
 
-    # add test-time-augmentation -- tta makes the model more memory intensive
-    if args.tta == 1:
-        model = tta.SegmentationTTAWrapper(
-            model, tta.aliases.d4_transform(), merge_mode="mean"
-        )
-        model.to(device)
-
-    model.eval()
-
     # scan input and mask folder
     scene = os.path.basename(args.input_raster)
     out_dir = f"{args.output_folder}/{scene}/preds"
@@ -175,13 +166,33 @@ def main():
         shuffle=False,
     )
 
+    # define transforms for tta
+    transforms = tta.Compose(
+        [
+            tta.HorizontalFlip(),
+            tta.VerticalFlip(),
+            tta.Rotate90(angles=[0, 90, 180, 270]),
+        ]
+    )
+
     # write predictions
     with torch.no_grad():
         for tiles, img_names in dataloader:
             tiles = tiles.to(device)
-            preds = torch.sigmoid(model(tiles))
-            #preds = (preds > args.threshold).detach().float() * 255
-            #write_output(preds, img_names, out_dir)
+            if args.tta:
+                mask = torch.zeros(tiles.size())
+                for transformer in transforms:
+                    preds = model(transformer.augment_image(tiles))
+                    preds = transformer.deaugment_mask(preds)
+                    mask += preds
+                preds = mask / len(transforms)
+
+            else:
+                preds = model(tiles)
+            preds = torch.sigmoid(preds)
+            preds = (preds > args.threshold).detach().float() * 255
+            write_output(preds, img_names, out_dir)
+
     print(f"Finished writing CNN predictions in {time.time() - tic}")
     shutil.rmtree(f"{args.output_folder}/{scene}")
     return None
