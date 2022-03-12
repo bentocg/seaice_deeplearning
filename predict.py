@@ -128,6 +128,7 @@ def main():
 
             device = "cuda:0"
             model = model.to(device)
+            torch.set_default_tensor_type("torch.cuda.FloatTensor")
 
         elif args.device_id == -9999:
             device = "cpu"
