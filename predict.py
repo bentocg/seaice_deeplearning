@@ -30,8 +30,11 @@ from utils.training.utility import seed_all
 def parse_args():
     parser = ArgumentParser("Inputs for temple classification pipeline")
     parser.add_argument(
-        "--model_name", "-n", type=str, help="model name for checkpoing loading",
-        default="UnetResnet34_512_8.197217315846395e-05_60_scratch_tsets_hand_aug_simple_ratio_0.75_loss_Mixed_dice-0.8704461455345154_iou-0.6997870008453754_epoch-20.pth"
+        "--model_name",
+        "-n",
+        type=str,
+        help="model name for checkpoing loading",
+        default="UnetResnet34_512_8.197217315846395e-05_60_scratch_tsets_hand_aug_simple_ratio_0.75_loss_Mixed_dice-0.8704461455345154_iou-0.6997870008453754_epoch-20.pth",
     )
     parser.add_argument(
         "--random_seed",
@@ -89,11 +92,7 @@ def parse_args():
         help="threshold for output binarization",
     )
     parser.add_argument(
-        "--polygons",
-        "-z",
-        type=int,
-        default=0,
-        help="write polygons to shapefile?"
+        "--polygons", "-z", type=int, default=0, help="write polygons to shapefile?"
     )
 
     parser.add_argument(
@@ -101,7 +100,7 @@ def parse_args():
         "-u",
         type=int,
         default=1,
-        help="create thumbnail outputs?"
+        help="create thumbnail outputs?",
     )
 
     return parser.parse_args()
@@ -144,6 +143,11 @@ def main():
     state_dict = torch.load(cp_path, map_location=device)
     model.load_state_dict(state_dict["state_dict"])
 
+    if args.tta:
+        model = tta.SegmentationTTAWrapper(
+            model, tta.aliases.d4_transform(), merge_mode="tsharpen"
+        )
+
     # scan input and mask folder
     scene = os.path.basename(args.input_raster)
     out_dir = f"{args.output_folder}/{scene}/preds"
@@ -167,37 +171,16 @@ def main():
         shuffle=False,
     )
 
-    # define transforms for tta
-    transforms = tta.Compose(
-        [
-            tta.HorizontalFlip(),
-            tta.VerticalFlip(),
-            tta.Rotate90(angles=[0, 90, 180, 270]),
-        ]
-    )
-
     # write predictions
     with torch.no_grad():
         for tiles, img_names in dataloader:
             tiles = tiles.to(device)
-            if args.tta:
-                mask = torch.zeros(tiles.size())
-                mask = mask.to(device)
-                for transformer in transforms:
-                    preds = model(transformer.augment_image(tiles))
-                    preds = transformer.deaugment_mask(preds)
-                    mask += preds
-                preds = mask / len(transforms)
-
-            else:
-                preds = model(tiles)
+            preds = model(tiles)
             preds = torch.sigmoid(preds)
             preds = (preds > args.threshold).detach().float() * 255
             write_output(preds, img_names, out_dir)
 
     print(f"Finished writing CNN predictions in {time.time() - tic}")
-    shutil.rmtree(f"{args.output_folder}/{scene}")
-    return None
 
     # free up memory
     del dataloader
