@@ -158,7 +158,7 @@ def main():
     tic = time.time()
     img, width, height, meta = Tiff().process_raster(args.input_raster)
     tile_image(img, patch_size, args.stride, out_dir.replace("preds", "tiles"), scene)
-    print(f"Finished tiling raster of size ({height}, {width}) in {time.time() - tic}.")
+    print(f"Finished tiling raster of size ({height}, {width}) in {(time.time() - tic):.2f}.")
 
     # instantiate dataset and dataloder
     tic = time.time()
@@ -180,7 +180,7 @@ def main():
             preds = (preds > args.threshold).detach().float() * 255
             write_output(preds, img_names, out_dir)
 
-    print(f"Finished writing CNN predictions in {time.time() - tic}")
+    print(f"Finished writing CNN predictions in {(time.time() - tic):.2f}")
 
     # free up memory
     del dataloader
@@ -202,7 +202,7 @@ def main():
         img[final_output > 0, :] = blend[final_output > 0, :]
         img = img[::8, ::8]
         cv2.imwrite(f"{args.output_folder}/{scene}", img)
-        print(f"Finished mosaicing output in {time.time() - tic}")
+        print(f"Finished mosaicing output in {(time.time() - tic):.2f}")
 
     # create shapefiles
     tic = time.time()
@@ -217,6 +217,7 @@ def main():
             print(time.time() - tic)
         else:
             print(f"No sea ice polygons for {args.input_scene}")
+        print(f"Finished writing output polygons in {(time.time() - tic):.2f}")
 
 
 if __name__ == "__main__":
