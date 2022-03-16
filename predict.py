@@ -201,7 +201,7 @@ def main():
         blend = cv2.addWeighted(img, 0.65, alpha_layer, 0.3, 0)
         img[final_output > 0, :] = blend[final_output > 0, :]
         img = img[::8, ::8]
-        cv2.imwrite(f"{args.output_folder}/{scene}", img)
+        cv2.imwrite(f"{args.output_folder}/{sum(final_output)}_{scene}", img)
         print(f"Finished mosaicing output in {(time.time() - tic):.2f}")
 
     # create shapefiles
@@ -214,7 +214,6 @@ def main():
         if len(gdf) > 0:
             gdf["scene"] = scene
             gdf.to_file(f"{args.output_folder}/shapefiles/{scene.split('.')[0]}.shp")
-            print(time.time() - tic)
         else:
             print(f"No sea ice polygons for {args.input_scene}")
         print(f"Finished writing output polygons in {(time.time() - tic):.2f}")
