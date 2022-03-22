@@ -115,7 +115,7 @@ def main():
 
     # define model
     if args.segmentation:
-        model = smp.Unet("resnet34", encoder_weights="imagenet", activation=None, in_channels=1)
+        model = smp.Unet("efficientnet-b3", encoder_weights="imagenet", activation=None, in_channels=1)
 
         # update with pretrained weights from classification
         if args.finetune:
@@ -151,7 +151,7 @@ def main():
         else:
             ft = "finetuned" + str(chosen_idx)
         model_name = (
-            f"UnetResnet34_{args.patch_size}_{args.learning_rate}_{args.batch_size}_"
+            f"UnetEfficentnet-b3_{args.patch_size}_{args.learning_rate}_{args.batch_size}_"
             f"{ft}_tsets_{args.tsets}_"
             f"aug_{args.augmentation_mode}_ratio_{args.neg_to_pos_ratio}_loss_{args.criterion}"
         )
