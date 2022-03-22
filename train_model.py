@@ -151,7 +151,7 @@ def main():
         else:
             ft = "finetuned" + str(chosen_idx)
         model_name = (
-            f"UnetEfficentnet-b3_{args.patch_size}_{args.learning_rate}_{args.batch_size}_"
+            f"UnetEfficentnetb3_{args.patch_size}_{args.learning_rate}_{args.batch_size}_"
             f"{ft}_tsets_{args.tsets}_"
             f"aug_{args.augmentation_mode}_ratio_{args.neg_to_pos_ratio}_loss_{args.criterion}"
         )
