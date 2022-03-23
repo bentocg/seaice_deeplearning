@@ -147,10 +147,11 @@ def main():
     state_dict = torch.load(cp_path, map_location=device)
     model.load_state_dict(state_dict["state_dict"])
 
-    if args.tta:
+    if args.tta == 1:
         model = tta.SegmentationTTAWrapper(
             model, tta.aliases.d4_transform(), merge_mode="tsharpen"
         )
+    model.eval()
 
     # scan input and mask folder
     scene = os.path.basename(args.input_raster)
