@@ -128,10 +128,8 @@ def main():
     # move to GPU if available
     if torch.cuda.is_available():
         if args.device_id == -1:
-
             device = "cuda:0"
             model = model.to(device)
-            torch.set_default_tensor_type("torch.cuda.FloatTensor")
 
         elif args.device_id == -9999:
             device = "cpu"
@@ -182,8 +180,7 @@ def main():
     with torch.no_grad():
         for tiles, img_names in dataloader:
             tiles = tiles.to(device)
-            preds = model(tiles)
-            preds = torch.sigmoid(preds)
+            preds = torch.sigmoid(model(tiles))
             preds = (preds > args.threshold).detach().float() * 255
             write_output(preds, img_names, out_dir)
 
