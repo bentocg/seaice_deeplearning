@@ -73,12 +73,12 @@ def parse_args():
 def main():
     args = parse_args()
 
-    # set random seet
+    # set random set
     seed_all(args.random_seed)
 
     # load model
     model_name = args.model_name
-    if "Efficient" in model_name:
+    if "Effic" in model_name:
         model = smp.Unet("efficientnet-b3", encoder_weights="imagenet", activation=None,
                          in_channels=1)
     else:
