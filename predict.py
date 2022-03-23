@@ -34,7 +34,7 @@ def parse_args():
         "-n",
         type=str,
         help="model name for checkpoing loading",
-        default="UnetResnet34_512_8.197217315846395e-05_60_scratch_tsets_hand_aug_simple_ratio_0.75_loss_Mixed_dice-0.8704461455345154_iou-0.6997870008453754_epoch-20.pth",
+        default="UnetResnet34_256_0.0005_10_scratch_tsets_hand_aug_simple_ratio_1.0_loss_Mixed_dice-0.8523930311203003_iou-0.6566608219456549_epoch-6.pth",
     )
     parser.add_argument(
         "--random_seed",
@@ -110,12 +110,12 @@ def main():
     tic = time.time()
     args = parse_args()
 
-    # set random seet
+    # set random seed
     seed_all(args.random_seed)
 
     # load model
     model_name = args.model_name
-    if "Efficient" in model_name:
+    if "Effic" in model_name:
         model = smp.Unet("efficientnet-b3", encoder_weights="imagenet", activation=None,
                          in_channels=1)
     else:
@@ -123,7 +123,7 @@ def main():
 
     # extract model configs
     patch_size = int(model_name.split("_")[1])
-    batch_size = args.batch_size or int(model_name.split("_")[3]) // 4
+    batch_size = int(model_name.split("_")[3]) * 2
 
     # move to GPU if available
     if torch.cuda.is_available():
@@ -162,7 +162,9 @@ def main():
     tic = time.time()
     img, width, height, meta = Tiff().process_raster(args.input_raster)
     tile_image(img, patch_size, args.stride, out_dir.replace("preds", "tiles"), scene)
-    print(f"Finished tiling raster of size ({height}, {width}) in {(time.time() - tic):.2f}.")
+    print(
+        f"Finished tiling raster of size ({height}, {width}) in {(time.time() - tic):.2f}."
+    )
 
     # instantiate dataset and dataloder
     tic = time.time()
