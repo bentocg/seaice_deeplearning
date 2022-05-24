@@ -1,19 +1,17 @@
+import gc
 import os
 import shutil
 import time
 from argparse import ArgumentParser
-from itertools import product
-from multiprocessing import Pool, cpu_count
+
 
 import cv2
 import numpy as np
-import pandas as pd
-import geopandas as gpd
-import rasterio
+
 import segmentation_models_pytorch as smp
 import torch
 import ttach as tta
-from rasterio.features import shapes
+
 from torch.utils.data import DataLoader
 
 from utils.data_processing import (
@@ -34,7 +32,7 @@ def parse_args():
         "-n",
         type=str,
         help="model name for checkpoing loading",
-        default="UnetResnet34_256_0.0005_10_scratch_tsets_hand_aug_simple_ratio_1.0_loss_Mixed_dice-0.8523930311203003_iou-0.6566608219456549_epoch-6.pth",
+        default="UnetEfficentnetb3_512_0.000583994821643628_25_scratch_tsets_hand_synthetic_aug_simple_ratio_0.33_loss_Mixed_dice-0.8736629486083984_iou-0.6613094468232107_epoch-8.pth",
     )
     parser.add_argument(
         "--random_seed",
@@ -116,8 +114,12 @@ def main():
     # load model
     model_name = args.model_name
     if "Effic" in model_name:
-        model = smp.Unet("efficientnet-b3", encoder_weights="imagenet", activation=None,
-                         in_channels=1)
+        model = smp.Unet(
+            "efficientnet-b3",
+            encoder_weights="imagenet",
+            activation=None,
+            in_channels=1,
+        )
     else:
         model = smp.Unet(in_channels=1)
 
@@ -190,22 +192,34 @@ def main():
     del dataloader
     del dataset
     del model
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    gc.collect()
 
     # merge predictions
     tic = time.time()
     final_output = merge_output((height, width), out_dir)
     final_output = (final_output > args.threshold).astype(np.uint8)
-    final_output = final_output * 255
+
+    # get sea ice cover
+    non_zero_mask = (img != 0).astype(np.uint8)
+    total_area = non_zero_mask.sum()
+    sea_ice_area = (
+        final_output * cv2.erode(non_zero_mask, np.ones((patch_size, patch_size)))
+    ).sum()
+    percent_cover = total_area / sea_ice_area
+
     shutil.rmtree(f"{args.output_folder}/{scene}")
 
     # write alpha layers
     if args.thumbnail_outputs:
+        final_output = final_output * 255
         alpha_layer = np.zeros(img.shape, dtype=np.uint8)
         alpha_layer[final_output > 0, :] = (45, 45, 255)
         blend = cv2.addWeighted(img, 0.65, alpha_layer, 0.3, 0)
         img[final_output > 0, :] = blend[final_output > 0, :]
         img = img[::8, ::8]
-        cv2.imwrite(f"{args.output_folder}/area-{np.sum(final_output)}_{scene}", img)
+        cv2.imwrite(f"{args.output_folder}/cover-{percent_cover}_{scene}", img)
         print(f"Finished mosaicing output in {(time.time() - tic):.2f}")
 
     # create shapefiles
