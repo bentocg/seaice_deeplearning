@@ -202,12 +202,13 @@ def main():
     final_output = (final_output > args.threshold).astype(np.uint8)
 
     # get sea ice cover
-    non_zero_mask = (img != 0).astype(np.uint8)
+    non_zero_mask = ((img != 0).sum(axis=2) / 3).astype(np.uint8)
+    breakpoint()
     total_area = non_zero_mask.sum()
     sea_ice_area = (
         final_output * cv2.erode(non_zero_mask, np.ones((patch_size, patch_size)))
     ).sum()
-    percent_cover = total_area / sea_ice_area
+    percent_cover = sea_ice_area / total_area
 
     shutil.rmtree(f"{args.output_folder}/{scene}")
 
