@@ -203,7 +203,6 @@ def main():
 
     # get sea ice cover
     non_zero_mask = ((img != 0).sum(axis=2) / 3).astype(np.uint8)
-    breakpoint()
     total_area = non_zero_mask.sum()
     sea_ice_area = (
         final_output * cv2.erode(non_zero_mask, np.ones((patch_size, patch_size)))
