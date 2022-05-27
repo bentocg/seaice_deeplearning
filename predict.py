@@ -100,12 +100,19 @@ def parse_args():
         default=1,
         help="create thumbnail outputs?",
     )
+    parser.add_argument(
+        "--sea-mask-shape",
+        "-sm",
+        dest="sea_mask_shape",
+        type=str,
+        nargs='?',
+        help="path to sea mask shapefile"
+    )
 
     return parser.parse_args()
 
 
 def main():
-    tic = time.time()
     args = parse_args()
 
     # set random seed
@@ -161,7 +168,7 @@ def main():
 
     # extract RGB tiles from raster
     tic = time.time()
-    img, width, height, meta = Tiff().process_raster(args.input_raster)
+    img, width, height, meta = Tiff().process_raster(args.input_raster, args.sea_mask_shape)
     tile_image(img, patch_size, args.stride, out_dir.replace("preds", "tiles"), scene)
     print(
         f"Finished tiling raster of size ({height}, {width}) in {(time.time() - tic):.2f}."

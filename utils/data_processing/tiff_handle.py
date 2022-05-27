@@ -1,5 +1,7 @@
 import rasterio
 import numpy as np
+from rasterio.mask import mask
+import fiona
 
 
 class Tiff:
@@ -7,10 +9,17 @@ class Tiff:
         pass
         
     @staticmethod
-    def process_raster(raster_path) -> np.array:
+    def process_raster(raster_path, mask_path) -> np.array:
         if 'WV03' in raster_path:
             with rasterio.open(raster_path) as src:
-                img = src.read([2, 3, 5]).transpose(1, 2, 0)
+                if mask_path:
+                    # Mask out land
+                    with fiona.open(mask_path, "r") as shapefile:
+                        sea_ice_shapes = [feature["geometry"] for feature in shapefile]
+                        img, _ = mask(src, shapes=sea_ice_shapes)
+                    img = img[[2, 3, 5]].transpose(1, 2, 0)
+                else:
+                    img = src.read([2, 3, 5]).transpose(1, 2, 0)
                 
         else:
             raise NotImplementedError(f'sensor not supported for {raster_path}')
