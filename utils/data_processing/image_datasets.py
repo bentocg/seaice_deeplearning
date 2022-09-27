@@ -89,7 +89,10 @@ class SeaIceDataset(Dataset):
                     mask_path = self.mask_names[idx]
                     label = self.bin_labels[idx]
 
-                    img = cv2.cvtColor(np.array(Image.open(img_path)), cv2.COLOR_BGR2GRAY)
+                    img = np.array(Image.open(img_path))
+                    print(img.shape)
+                    if img.shape[-1] == 3:
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                     if mask_path:
                         mask = np.array(Image.open(mask_path), dtype=np.uint8)
                     else:
@@ -107,7 +110,10 @@ class SeaIceDataset(Dataset):
                     print(self.img_names[idx])
                     idx -= 5
                     img_path = self.img_names[idx]
-                    img = cv2.cvtColor(np.array(Image.open(img_path)), cv2.COLOR_BGR2GRAY)
+
+                    img = np.array(Image.open(img_path))
+                    if img.shape[-1] == 3:
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                     img = self.transforms(image=img)["image"]
                     label = self.bin_labels[idx]
         is_hand = self.is_hand[idx]
@@ -135,7 +141,9 @@ class TestDataset(Dataset):
 
         # read img and apply transforms
         img_name = self.img_names[idx]
-        img = cv2.cvtColor(np.array(Image.open(img_name)), cv2.COLOR_BGR2GRAY)
+        img = np.array(Image.open(img_name))
+        if img.shape[-1] == 3:
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         try:
             img = self.transforms(image=img)["image"]
         except:
