@@ -22,7 +22,7 @@ class Tiff:
                     if "M1BS" in raster_path:
                         img = src.read([2, 3, 5]).transpose(1, 2, 0)
                     else:
-                        img = src.read(1).reshape(src.height, src.width, 1)
+                        img = src.read(1).reshape(src.height, src.width, 1)[::4, ::4, :]
                 
         else:
             raise NotImplementedError(f'sensor not supported for {raster_path}')
