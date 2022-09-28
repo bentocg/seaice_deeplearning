@@ -207,6 +207,7 @@ def main():
     tic = time.time()
     final_output = merge_output((height, width), out_dir)
     final_output = (final_output > args.threshold).astype(np.uint8)
+    final_output = final_output * 255
 
     # get sea ice cover
     non_zero_mask = ((img != 0).sum(axis=2) / 3).astype(np.uint8)
@@ -220,10 +221,12 @@ def main():
 
     # write alpha layers
     if args.thumbnail_outputs:
-        final_output = final_output * 255
         alpha_layer = np.zeros(img.shape, dtype=np.uint8)
         alpha_layer[final_output > 0, :] = tuple([45] * (img.shape[-1] - 1) + [255])
         blend = cv2.addWeighted(img, 0.65, alpha_layer, 0.3, 0)
+        print(img.shape)
+        print(final_output.shape)
+        print(blend.shape)
         img[final_output > 0, :] = blend[final_output > 0, :]
         img = img[::8, ::8]
         cv2.imwrite(f"{args.output_folder}/cover-{percent_cover}_area-{sea_ice_area}_{scene}", img)
