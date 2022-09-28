@@ -207,7 +207,6 @@ def main():
     tic = time.time()
     final_output = merge_output((height, width), out_dir)
     final_output = (final_output > args.threshold).astype(np.uint8)
-    final_output = final_output * 255
 
     # get sea ice cover
     non_zero_mask = ((img != 0).sum(axis=2) / 3).astype(np.uint8)
@@ -218,6 +217,7 @@ def main():
     percent_cover = sea_ice_area / total_area
 
     shutil.rmtree(f"{args.output_folder}/{scene}")
+    final_output = final_output * 255
 
     # write alpha layers
     if args.thumbnail_outputs:
