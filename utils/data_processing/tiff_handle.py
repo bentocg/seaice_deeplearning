@@ -26,8 +26,8 @@ class Tiff:
                         img = src.read([2, 3, 5]).transpose(1, 2, 0)
                     else:
                         img = src.read(1).reshape(height, width, 1)[::4, ::4, :]
-                        height = height // 4
-                        width = width // 4
+                        height = img.shape[0]
+                        width = img.shape[1]
 
                 
         else:
