@@ -1,5 +1,6 @@
 from functools import partial
 
+import cv2
 import rasterio
 import geopandas as gpd
 from rasterio.windows import Window
@@ -77,10 +78,16 @@ def polygonize_raster(input_raster, final_output, size=1000):
     print(f"Polygonizing output for scene {input_raster}")
 
     tic_total = time.time()
+
     with rasterio.open(input_raster) as src:
         raster_height = src.height
         raster_width = src.width
+
         crs = src.crs
+
+    if final_output.shape != (raster_height, raster_width):
+        final_output = cv2.resize(final_output, (raster_height, raster_width))
+
     x = [
         ele[0]
         for ele in product(range(0, raster_height, size), range(0, raster_width, size))
